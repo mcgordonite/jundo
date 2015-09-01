@@ -1,12 +1,12 @@
 {
-  "name": "jundo",
-  "private": true,
-  "authors": [
-    "Matthew Gordon <mc.gordonite@gmail.com>"
-  ],
-  "devDependencies": {
-    "purescript-console": "~0.1.1",
-    "purescript-prelude": "~0.1.2"
-  }
+	"name": "jundo",
+	"private": true,
+	"authors": [
+		"Matthew Gordon <mc.gordonite@gmail.com>"
+	],
+	"devDependencies": {
+		"purescript-console": "~0.1.1",
+		"purescript-prelude": "~0.1.2"
+	}
 }
 

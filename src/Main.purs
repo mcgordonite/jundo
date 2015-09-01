@@ -6,5 +6,4 @@ import Control.Monad.Eff.Console
 
 main :: Eff (console :: CONSOLE) Unit
 main = do
-  log "Hello world"
-
+	log "Hello world"
