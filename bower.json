@@ -1,0 +1,11 @@
+{
+  "name": "jundo",
+  "private": true,
+  "authors": [
+    "Matthew Gordon <mc.gordonite@gmail.com>"
+  ],
+  "devDependencies": {
+    "purescript-prelude": "~0.1.2"
+  }
+}
+
