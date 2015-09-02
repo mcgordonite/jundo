@@ -1,32 +1,34 @@
-module WebGL where
+module WebGL (
+	WebGL(),
+	createBuffer,
+	WebGLBuffer(),
+	logBuffer,
+	WebGLRenderingContext(),
+	unsafeGetContext,
+	runWebGL
+	) where
 
 import Prelude
 import Control.Monad.Reader
 
-data Context = Context Int
+foreign import data WebGLRenderingContext :: *
+foreign import data WebGLBuffer :: *
+foreign import createBufferImpl :: WebGLRenderingContext -> WebGLBuffer
 
-instance showContext :: Show Context where
-	show (Context id) = "Context " ++ show id
+type WebGL a = Reader WebGLRenderingContext a
 
-data Buffer = Buffer Int Int Int Int
-
-instance showBuffer :: Show Buffer where
-	show (Buffer id x y z) = "Buffer " ++ show id ++ " [" ++ show x ++ ", " ++ show y ++ ", " ++ show z ++ "]"
-
-type WebGL a = Reader Context a
-
-runWebGL :: forall a. Context -> WebGL a -> a
+runWebGL :: forall a. WebGLRenderingContext -> WebGL a -> a
 runWebGL ctx x = runReader x ctx
 
-createBuffer :: WebGL Buffer
+createBuffer :: WebGL WebGLBuffer
 createBuffer = do
-	Context id <- ask
-	return (Buffer id 0 0 0)
+	gl <- ask
+	return $ createBufferImpl gl
 
-initContext :: String -> Context
-initContext _ = Context 0
 
-testWebGL :: String
-testWebGL = runWebGL (initContext "easel") do
-	buffer <- createBuffer
-	return $ show buffer
+-- WARNING: This module becomes uncool from this point on
+
+import Control.Monad.Eff
+import Control.Monad.Eff.Console
+foreign import unsafeGetContext :: String -> WebGLRenderingContext
+foreign import logBuffer :: forall eff. WebGLBuffer -> Eff (console :: CONSOLE | eff) Unit
