@@ -7,6 +7,7 @@
 	"devDependencies": {
 		"purescript-console": "~0.1.1",
 		"purescript-matrix": "~0.4.4",
+		"purescript-transformers": "~0.7.1",
 		"purescript-vector": "~0.2.0"
 	}
 }

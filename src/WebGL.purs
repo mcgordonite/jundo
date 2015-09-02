@@ -1,4 +1,4 @@
-module Monad where
+module WebGL where
 
 import Prelude
 import Control.Monad.Reader
