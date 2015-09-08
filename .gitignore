@@ -4,3 +4,5 @@ bower_components
 .idea/
 output/
 src/.webpack.js
+*.tix
+
