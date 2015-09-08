@@ -10,9 +10,6 @@ import Graphics.Canvas (Canvas())
 import qualified Graphics.WebGL.Raw as GL
 import Graphics.WebGL.Raw.Types
 
-enable :: forall eff. WebGLContext -> GLenum -> Eff (canvas :: Canvas | eff) Unit
-enable webgl cap = runFn2 enableImpl webgl cap
-
 data WebGLF a
 	= Clear GLbitfield a
 	| ClearColor GLclampf GLclampf GLclampf GLclampf a
