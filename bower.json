@@ -6,9 +6,9 @@
 	],
 	"devDependencies": {
 		"purescript-console": "~0.1.1",
+		"purescript-free": "~0.8.0",
 		"purescript-matrix": "~0.4.4",
-		"purescript-transformers": "~0.7.1",
-		"purescript-vector": "~0.2.0"
+		"purescript-vector": "~0.2.0",
+		"purescript-webgl-raw": "https://github.com/Jonplussed/purescript-webgl-raw.git#~0.5.0"
 	}
 }
-
