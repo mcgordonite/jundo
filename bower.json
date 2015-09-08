@@ -5,6 +5,7 @@
 		"Matthew Gordon <mc.gordonite@gmail.com>"
 	],
 	"devDependencies": {
+		"purescript-canvas": "~0.3.2",
 		"purescript-console": "~0.1.1",
 		"purescript-free": "~0.8.0",
 		"purescript-matrix": "~0.4.4",
