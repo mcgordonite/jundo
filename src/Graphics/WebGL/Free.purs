@@ -7,7 +7,7 @@ import Prelude
 import Control.Monad.Eff
 import Control.Monad.Free
 import Graphics.Canvas (Canvas())
-import Graphics.WebGL.Raw as GL
+import qualified Graphics.WebGL.Raw as GL
 import Graphics.WebGL.Raw.Types
 
 enable :: forall eff. WebGLContext -> GLenum -> Eff (canvas :: Canvas | eff) Unit
