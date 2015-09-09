@@ -1,10 +1,20 @@
 module Main where
 
 import Prelude
-import Graphics.WebGL.Free
 import Control.Monad.Eff
-import Control.Monad.Eff.Console
+import Graphics.WebGL.Context
+import Graphics.WebGL.Free
+import qualified Graphics.WebGL.Raw.Enums as GL
+import Graphics.Canvas (Canvas(), getCanvasElementById)
 
-main :: Eff (console :: CONSOLE) Unit
+main :: Eff (canvas :: Canvas) Unit
 main = do
-	log "Done!"
+	Just el <- getCanvasElementById "easel"
+	gl <- getWebGLContext el
+	runWebGL gl do
+		viewport 0 0 500 500
+		clearColor 0.0 0.0 0.0 1.0
+		enable GL.depthTest
+		depthFunc GL.lequal
+		clear $ GL.colorBufferBit | GL.depthBufferBit
+		

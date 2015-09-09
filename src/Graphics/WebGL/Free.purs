@@ -1,6 +1,11 @@
 module Graphics.WebGL.Free (
 	WebGL(),
-	WebGLF()
+	WebGLF(),
+	clear,
+	clearColor,
+	depthFunc,
+	enable,
+	viewport
 	) where
 
 import Prelude
