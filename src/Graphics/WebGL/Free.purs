@@ -1,6 +1,7 @@
 module Graphics.WebGL.Free (
 	WebGL(),
 	WebGLF(),
+	runWebGL,
 	clear,
 	clearColor,
 	depthFunc,
