@@ -2,6 +2,7 @@ module Main where
 
 import Prelude
 import Control.Monad.Eff
+import Data.Int.Bits
 import Graphics.WebGL.Context
 import Graphics.WebGL.Free
 import qualified Graphics.WebGL.Raw.Enums as GL
@@ -16,5 +17,5 @@ main = do
 		clearColor 0.0 0.0 0.0 1.0
 		enable GL.depthTest
 		depthFunc GL.lequal
-		clear $ GL.colorBufferBit | GL.depthBufferBit
+		clear $ GL.colorBufferBit .|. GL.depthBufferBit
 		
