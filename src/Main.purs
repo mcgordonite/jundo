@@ -3,6 +3,7 @@ module Main where
 import Prelude
 import Control.Monad.Eff
 import Data.Int.Bits
+import Data.Maybe
 import Graphics.WebGL.Context
 import Graphics.WebGL.Free
 import qualified Graphics.WebGL.Raw.Enums as GL
