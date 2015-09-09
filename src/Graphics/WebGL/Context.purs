@@ -5,7 +5,7 @@ import Control.Monad.Eff
 import Graphics.Canvas (Canvas(), CanvasElement())
 import Graphics.WebGL.Raw.Types
 
-foreign import getWebGLContextWithAttrs :: CanvasElement -> WebGLContextAttributes -> Eff (canvas :: Canvas | eff) WebGLContext
+foreign import getWebGLContextWithAttrs :: forall eff. CanvasElement -> WebGLContextAttributes -> Eff (canvas :: Canvas | eff) WebGLContext
 
 defaultWebGLContextAttrs :: WebGLContextAttributes
 defaultWebGLContextAttrs = {
@@ -19,5 +19,5 @@ defaultWebGLContextAttrs = {
 	failIfMajorPerformanceCaveat: false
 	}
 
-getWebGLContext :: CanvasElement -> Eff (canvas :: Canvas | eff) WebGLContext
+getWebGLContext :: forall eff. CanvasElement -> Eff (canvas :: Canvas | eff) WebGLContext
 getWebGLContext el = getWebGLContextWithAttrs el defaultWebGLContextAttrs
