@@ -41,10 +41,10 @@ enable cap = liftF $ Enable cap unit
 viewport :: GLint -> GLint -> GLsizei -> GLsizei -> WebGL Unit
 viewport x y w h = liftF $ Viewport x y w h unit
 
-runWebGL :: forall a eff. R.WebGLContext -> WebGL a -> Eff (canvas :: Canvas | eff) a
+runWebGL :: forall a eff. WebGLContext -> WebGL a -> Eff (canvas :: Canvas | eff) a
 runWebGL gl = runFreeM interpret
 	where
-	interpret :: WebGLF (WebGL a) -> Eff (canvas :: Canvas | eff) a
+	interpret :: forall a. WebGLF (WebGL a) -> Eff (canvas :: Canvas | eff) (WebGL a)
 	interpret (Clear mask rest) = do
 		R.clear gl mask
 		return rest
@@ -54,7 +54,7 @@ runWebGL gl = runFreeM interpret
 	interpret (DepthFunc func rest) = do
 		R.depthFunc gl func
 		return rest
-	interpret (Enable cap) = do
+	interpret (Enable cap rest) = do
 		R.enable gl cap
 		return rest
 	interpret (Viewport x y w h rest) = do
