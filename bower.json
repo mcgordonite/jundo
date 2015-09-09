@@ -10,6 +10,7 @@
 		"purescript-integers": "~0.2.1",
 		"purescript-free": "~0.8.0",
 		"purescript-matrix": "~0.4.4",
+		"purescript-maybe": "~0.3.4",
 		"purescript-vector": "~0.2.0",
 		"purescript-webgl-raw": "https://github.com/Jonplussed/purescript-webgl-raw.git#~0.5.0"
 	}

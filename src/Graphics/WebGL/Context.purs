@@ -2,6 +2,7 @@ module Graphics.WebGL.Context where
 
 import Prelude
 import Control.Monad.Eff
+import Data.Maybe
 import Graphics.Canvas (Canvas(), CanvasElement())
 import Graphics.WebGL.Raw.Types
 
