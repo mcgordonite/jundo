@@ -29,8 +29,8 @@ fragmentShaderId = D.ElementId "fragment-shader"
 vertexShaderId :: D.ElementId
 vertexShaderId = D.ElementId "vertex-shader"
 
-vertices :: Float32Array
-vertices = asFloat32Array [1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0]
+squareVertices :: Float32Array
+squareVertices = asFloat32Array [1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0]
 
 loadShaderSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadShaderSourceFromElement elementId = do
@@ -67,12 +67,14 @@ main = do
 		program <- buildProgram vertexShader fragmentShader
 		useProgram program
 
+		Just mvMatrixLocation <- getUniformLocation program "uMVMatrix"
+		Just pMatrixLocation <- getUniformLocation program "uPMatrix"
 		vertexPositionAttribute <- getAttribLocation program "aVertexPosition"
 		enableVertexAttribArray vertexPositionAttribute
 
 		Just squareVerticesBuffer <- createBuffer
 		bindBuffer GL.arrayBuffer squareVerticesBuffer
-		bufferData GL.arrayBuffer vertices GL.staticDraw
+		bufferData GL.arrayBuffer squareVertices GL.staticDraw
 
 		clearColor 0.0 0.0 0.0 1.0
 		enable GL.depthTest

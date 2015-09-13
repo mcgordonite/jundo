@@ -19,6 +19,7 @@ module Graphics.WebGL.Free (
 	getCanvas,
 	getDrawingBufferHeight,
 	getDrawingBufferWidth,
+	getUniformLocation,
 	linkProgram,
 	shaderSource,
 	useProgram,
@@ -51,6 +52,7 @@ data WebGLF a
 	| GetCanvas (CanvasElement -> a)
 	| GetDrawingBufferHeight (Int -> a)
 	| GetDrawingBufferWidth (Int -> a)
+	| GetUniformLocation WebGLProgram DOMString (Maybe WebGLUniformLocation -> a)
 	| LinkProgram WebGLProgram a
 	| ShaderSource WebGLShader DOMString a
 	| UseProgram WebGLProgram a
@@ -73,6 +75,7 @@ instance functorWebGLF :: Functor WebGLF where
 	map f (GetCanvas k) = GetCanvas (f <<< k)
 	map f (GetDrawingBufferHeight k) = GetDrawingBufferHeight (f <<< k)
 	map f (GetDrawingBufferWidth k) = GetDrawingBufferWidth (f <<< k)
+	map f (GetUniformLocation p n k) = GetUniformLocation p n (f <<< k)
 	map f (LinkProgram p x) = LinkProgram p (f x)
 	map f (ShaderSource sh src x) = ShaderSource sh src (f x)
 	map f (UseProgram p x) = UseProgram p (f x)
@@ -127,6 +130,9 @@ getDrawingBufferHeight = liftF $ GetDrawingBufferHeight id
 
 getDrawingBufferWidth :: WebGL Int
 getDrawingBufferWidth = liftF $ GetDrawingBufferWidth id
+
+getUniformLocation :: WebGLProgram -> DOMString -> WebGL (Maybe WebGLUniformLocation)
+getUniformLocation program name = liftF $ GetUniformLocation program name id
 
 linkProgram :: WebGLProgram -> WebGL Unit
 linkProgram p = liftF $ LinkProgram p unit
@@ -192,6 +198,9 @@ runWebGL gl = runFreeM interpret
 	interpret (GetDrawingBufferWidth k) = do
 		w <- R.getDrawingBufferWidth gl
 		return $ k w
+	interpret (GetUniformLocation program name k) = do
+		location <- R.getUniformLocation gl program name
+		return $ k location
 	interpret (LinkProgram p rest) = do
 		R.linkProgram gl p
 		return rest
