@@ -1,3 +1,4 @@
+-- Free Monad for WebGL
 module Graphics.WebGL.Free (
 	WebGL(),
 	WebGLF(),
@@ -5,6 +6,9 @@ module Graphics.WebGL.Free (
 	clear,
 	clearColor,
 	depthFunc,
+	getCanvas,
+	getDrawingBufferHeight,
+	getDrawingBufferWidth,
 	enable,
 	viewport
 	) where
@@ -12,8 +16,9 @@ module Graphics.WebGL.Free (
 import Prelude
 import Control.Monad.Eff
 import Control.Monad.Free
-import Graphics.Canvas (Canvas())
+import Graphics.Canvas (Canvas(), CanvasElement())
 import qualified Graphics.WebGL.Raw as R
+import qualified Graphics.WebGL.Raw.Extra as R
 import Graphics.WebGL.Raw.Types
 
 data WebGLF a
@@ -21,6 +26,9 @@ data WebGLF a
 	| ClearColor GLclampf GLclampf GLclampf GLclampf a
 	| DepthFunc GLenum a
 	| Enable GLenum a
+	| GetCanvas (CanvasElement -> a)
+	| GetDrawingBufferHeight (Int -> a)
+	| GetDrawingBufferWidth (Int -> a)
 	| Viewport GLint GLint GLsizei GLsizei a
 
 instance functorWebGLF :: Functor WebGLF where
@@ -28,6 +36,9 @@ instance functorWebGLF :: Functor WebGLF where
 	map f (ClearColor r g b a x) = ClearColor r g b a (f x)
 	map f (DepthFunc func x) = DepthFunc func (f x)
 	map f (Enable cap x) = Enable cap (f x)
+	map f (GetCanvas k) = GetCanvas (f <<< k)
+	map f (GetDrawingBufferHeight k) = GetDrawingBufferHeight (f <<< k)
+	map f (GetDrawingBufferWidth k) = GetDrawingBufferWidth (f <<< k)
 	map f (Viewport x y w h a) = Viewport x y w h (f a)
 
 type WebGL = Free WebGLF
@@ -43,6 +54,15 @@ depthFunc func = liftF $ DepthFunc func unit
 
 enable :: GLenum -> WebGL Unit
 enable cap = liftF $ Enable cap unit
+
+getCanvas :: WebGL CanvasElement
+getCanvas = liftF $ GetCanvas id
+
+getDrawingBufferHeight :: WebGL Int
+getDrawingBufferHeight = liftF $ GetDrawingBufferHeight id
+
+getDrawingBufferWidth :: WebGL Int
+getDrawingBufferWidth = liftF $ GetDrawingBufferWidth id
 
 viewport :: GLint -> GLint -> GLsizei -> GLsizei -> WebGL Unit
 viewport x y w h = liftF $ Viewport x y w h unit
@@ -63,7 +83,15 @@ runWebGL gl = runFreeM interpret
 	interpret (Enable cap rest) = do
 		R.enable gl cap
 		return rest
+	interpret (GetCanvas k) = do
+		el <- R.getCanvas gl
+		return $ k el
+	interpret (GetDrawingBufferHeight k) = do
+		h <- R.getDrawingBufferHeight gl
+		return $ k h
+	interpret (GetDrawingBufferWidth k) = do
+		w <- R.getDrawingBufferWidth gl
+		return $ k w
 	interpret (Viewport x y w h rest) = do
 		R.viewport gl x y w h
 		return rest
-	
