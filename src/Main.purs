@@ -4,6 +4,8 @@ import Prelude
 import Control.Monad.Eff
 import Data.Int.Bits
 import Data.Maybe
+import DOM
+import DOM.RequestAnimationFrame
 import Graphics.WebGL.Context
 import Graphics.WebGL.Free
 import qualified Graphics.WebGL.Raw.Enums as GL
@@ -21,13 +23,19 @@ resize el gl = do
 		bufferWidth <- getDrawingBufferWidth
 		viewport 0 0 bufferWidth bufferHeight
 
-main :: Eff (canvas :: Canvas) Unit
+tick :: forall eff. CanvasElement -> WebGLContext -> Eff (canvas :: Canvas, dom :: DOM | eff) Unit
+tick el gl = do
+	resize el gl
+	runWebGL gl do
+		clear $ GL.colorBufferBit .|. GL.depthBufferBit
+	requestAnimationFrame $ tick el gl
+
+main :: Eff (canvas :: Canvas, dom :: DOM) Unit
 main = do
 	Just el <- getCanvasElementById "easel"
 	gl <- getWebGLContext el
-	resize el gl
 	runWebGL gl do
 		clearColor 0.0 0.0 0.0 1.0
 		enable GL.depthTest
 		depthFunc GL.lequal
-		clear $ GL.colorBufferBit .|. GL.depthBufferBit
+	tick el gl
