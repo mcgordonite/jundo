@@ -2,9 +2,11 @@ module Main where
 
 import Prelude
 import Control.Monad.Eff
+import Data.ArrayBuffer.Types (Float32Array())
 import Data.Int.Bits
 import Data.Maybe
 import Data.Nullable
+import Data.TypedArray (asFloat32Array)
 import qualified DOM as D
 import qualified DOM.RequestAnimationFrame as D
 import qualified DOM.Node.Node as D
@@ -26,6 +28,9 @@ fragmentShaderId = D.ElementId "fragment-shader"
 
 vertexShaderId :: D.ElementId
 vertexShaderId = D.ElementId "vertex-shader"
+
+vertices :: Float32Array
+vertices = asFloat32Array [1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0]
 
 loadShaderSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadShaderSourceFromElement elementId = do
@@ -61,8 +66,14 @@ main = do
 		vertexShader <- buildShader vertexSource GL.vertexShader
 		program <- buildProgram vertexShader fragmentShader
 		useProgram program
+
 		vertexPositionAttribute <- getAttribLocation program "aVertexPosition"
 		enableVertexAttribArray vertexPositionAttribute
+
+		Just squareVerticesBuffer <- createBuffer
+		bindBuffer GL.arrayBuffer squareVerticesBuffer
+		bufferData GL.arrayBuffer vertices GL.staticDraw
+
 		clearColor 0.0 0.0 0.0 1.0
 		enable GL.depthTest
 		depthFunc GL.lequal

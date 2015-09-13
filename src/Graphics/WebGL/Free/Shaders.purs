@@ -8,7 +8,7 @@ import Data.Maybe
 import Graphics.WebGL.Free
 import Graphics.WebGL.Raw.Types
 
-buildShader :: forall eff. String -> GLenum-> WebGL WebGLShader
+buildShader :: forall eff. DOMString -> GLenum-> WebGL WebGLShader
 buildShader source shaderType = do
 	Just shader <- createShader shaderType
 	shaderSource shader source

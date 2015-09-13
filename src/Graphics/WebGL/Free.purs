@@ -4,7 +4,10 @@ module Graphics.WebGL.Free (
 	WebGLF(),
 	runWebGL,
 	attachShader,
+	bindBuffer,
+	bufferData,
 	clear,
+	createBuffer,
 	clearColor,
 	createProgram,
 	compileShader,
@@ -33,28 +36,34 @@ import Graphics.WebGL.Raw.Types
 
 data WebGLF a
 	= AttachShader WebGLProgram WebGLShader a
+	| BindBuffer GLenum WebGLBuffer a
+	| BufferData GLenum BufferDataSource GLenum a
 	| Clear GLbitfield a
 	| ClearColor GLclampf GLclampf GLclampf GLclampf a
 	| CompileShader WebGLShader a
+	| CreateBuffer (Maybe WebGLBuffer -> a)
 	| CreateProgram (Maybe WebGLProgram -> a)
 	| CreateShader GLenum (Maybe WebGLShader -> a)
 	| DepthFunc GLenum a
 	| Enable GLenum a
 	| EnableVertexAttribArray GLuint a
-	| GetAttribLocation WebGLProgram String (GLuint -> a)
+	| GetAttribLocation WebGLProgram DOMString (GLuint -> a)
 	| GetCanvas (CanvasElement -> a)
 	| GetDrawingBufferHeight (Int -> a)
 	| GetDrawingBufferWidth (Int -> a)
 	| LinkProgram WebGLProgram a
-	| ShaderSource WebGLShader String a
+	| ShaderSource WebGLShader DOMString a
 	| UseProgram WebGLProgram a
 	| Viewport GLint GLint GLsizei GLsizei a
 
 instance functorWebGLF :: Functor WebGLF where
 	map f (AttachShader p s x) = AttachShader p s (f x)
+	map f (BindBuffer t b x) = BindBuffer t b (f x)
+	map f (BufferData t s u x) = BufferData t s u (f x)
 	map f (Clear mask x) = Clear mask (f x)
 	map f (ClearColor r g b a x) = ClearColor r g b a (f x)
 	map f (CompileShader s x) = CompileShader s (f x)
+	map f (CreateBuffer k) = CreateBuffer (f <<< k)
 	map f (CreateProgram k) = CreateProgram (f <<< k)
 	map f (CreateShader t k) = CreateShader t (f <<< k)
 	map f (DepthFunc func x) = DepthFunc func (f x)
@@ -74,6 +83,12 @@ type WebGL = Free WebGLF
 attachShader :: WebGLProgram -> WebGLShader -> WebGL Unit
 attachShader p s = liftF $ AttachShader p s unit
 
+bindBuffer :: GLenum -> WebGLBuffer -> WebGL Unit
+bindBuffer t b = liftF $ BindBuffer t b unit
+
+bufferData :: GLenum -> BufferDataSource -> GLenum -> WebGL Unit
+bufferData t s u = liftF $ BufferData t s u unit
+
 clear :: GLbitfield -> WebGL Unit
 clear mask = liftF $ Clear mask unit
 
@@ -82,6 +97,9 @@ clearColor r g b a = liftF $ ClearColor r g b a unit
 
 compileShader :: WebGLShader -> WebGL Unit
 compileShader s = liftF $ CompileShader s unit
+
+createBuffer :: WebGL (Maybe WebGLBuffer)
+createBuffer = liftF $ CreateBuffer id
 
 createProgram :: WebGL (Maybe WebGLProgram)
 createProgram = liftF $ CreateProgram id
@@ -98,7 +116,7 @@ enable cap = liftF $ Enable cap unit
 enableVertexAttribArray :: GLuint -> WebGL Unit
 enableVertexAttribArray index = liftF $ EnableVertexAttribArray index unit
 
-getAttribLocation :: WebGLProgram -> String -> WebGL GLuint
+getAttribLocation :: WebGLProgram -> DOMString -> WebGL GLuint
 getAttribLocation program name = liftF $ GetAttribLocation program name id
 
 getCanvas :: WebGL CanvasElement
@@ -113,7 +131,7 @@ getDrawingBufferWidth = liftF $ GetDrawingBufferWidth id
 linkProgram :: WebGLProgram -> WebGL Unit
 linkProgram p = liftF $ LinkProgram p unit
 
-shaderSource :: WebGLShader -> String -> WebGL Unit
+shaderSource :: WebGLShader -> DOMString -> WebGL Unit
 shaderSource sh src = liftF $ ShaderSource sh src unit
 
 useProgram :: WebGLProgram -> WebGL Unit
@@ -129,6 +147,12 @@ runWebGL gl = runFreeM interpret
 	interpret (AttachShader p s rest) = do
 		R.attachShader gl p s
 		return rest
+	interpret (BindBuffer t buffer rest) = do
+		R.bindBuffer gl t buffer
+		return rest
+	interpret (BufferData t source usage rest) = do
+		R.bufferData gl t source usage
+		return rest
 	interpret (Clear mask rest) = do
 		R.clear gl mask
 		return rest
@@ -138,6 +162,9 @@ runWebGL gl = runFreeM interpret
 	interpret (CompileShader sh rest) = do
 		R.compileShader gl sh
 		return rest
+	interpret (CreateBuffer k) = do
+		buffer <- R.createBuffer gl
+		return $ k buffer
 	interpret (CreateProgram k) = do
 		program <- R.createProgram gl
 		return $ k program
