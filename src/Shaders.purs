@@ -1,6 +1,5 @@
 module Shaders (
-	getFragmentShader,
-	getVertexShader
+	initialiseShaders
 	) where
 
 import Prelude
@@ -19,24 +18,41 @@ import qualified DOM.HTML as D
 import qualified DOM.HTML.Types as D
 import qualified DOM.HTML.Window as D
 
+fragmentShaderId :: D.ElementId
+fragmentShaderId = D.ElementId "fragment-shader"
+
+vertexShaderId :: D.ElementId
+vertexShaderId = D.ElementId "vertex-shader"
+
 loadSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadSourceFromElement elementId = do
 	document <- D.window >>= D.document >>= pure <<< D.htmlDocumentToNonElementParentNode
 	Just el <- D.getElementById elementId document >>= pure <<< toMaybe
 	D.textContent $ D.elementToNode el
 
-getShader :: forall eff. D.ElementId -> GLenum -> WebGLContext -> Eff (canvas :: Canvas, dom :: D.DOM | eff) WebGLShader
-getShader elementId shaderType gl = do
-	source <- loadSourceFromElement elementId
+buildShader :: forall eff. String -> GLenum-> WebGL WebGLShader
+buildShader source shaderType = do
+	Just shader <- createShader shaderType
+	shaderSource shader source
+	compileShader shader
+	-- TODO: Check shader compile status (getShaderParameter)
+	return shader
+
+buildProgram :: forall eff. WebGLShader -> WebGLShader -> WebGL WebGLProgram
+buildProgram vs fs = do
+	Just program <- createProgram
+	attachShader program vs
+	attachShader program fs
+	linkProgram program
+	-- TODO: Check shader program link status (getProgramParameter)
+	return program
+
+initialiseShaders :: forall eff. WebGLContext -> Eff (canvas :: Canvas, dom :: D.DOM | eff) Unit
+initialiseShaders gl = do
+	fragmentSource <- loadSourceFromElement fragmentShaderId
+	vertexSource <- loadSourceFromElement vertexShaderId
 	runWebGL gl do
-		Just shader <- createShader shaderType
-		shaderSource shader source
-		compileShader shader
-		-- TODO: Check shader compile status (getShaderParameter)
-		return shader
-
-getFragmentShader :: forall eff. WebGLContext -> Eff (canvas :: Canvas, dom :: D.DOM | eff) WebGLShader
-getFragmentShader = getShader (D.ElementId "fragment-shader") GL.fragmentShader
-
-getVertexShader :: forall eff. WebGLContext -> Eff (canvas :: Canvas, dom :: D.DOM | eff) WebGLShader
-getVertexShader = getShader (D.ElementId "vertex-shader") GL.vertexShader
+		fragmentShader <- buildShader fragmentSource GL.fragmentShader
+		vertexShader <- buildShader vertexSource GL.vertexShader
+		program <- buildProgram vertexShader fragmentShader
+		useProgram program
