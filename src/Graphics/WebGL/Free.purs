@@ -11,6 +11,8 @@ module Graphics.WebGL.Free (
 	createShader,
 	depthFunc,
 	enable,
+	enableVertexAttribArray,
+	getAttribLocation,
 	getCanvas,
 	getDrawingBufferHeight,
 	getDrawingBufferWidth,
@@ -38,6 +40,8 @@ data WebGLF a
 	| CreateShader GLenum (Maybe WebGLShader -> a)
 	| DepthFunc GLenum a
 	| Enable GLenum a
+	| EnableVertexAttribArray GLuint a
+	| GetAttribLocation WebGLProgram String (GLuint -> a)
 	| GetCanvas (CanvasElement -> a)
 	| GetDrawingBufferHeight (Int -> a)
 	| GetDrawingBufferWidth (Int -> a)
@@ -55,6 +59,8 @@ instance functorWebGLF :: Functor WebGLF where
 	map f (CreateShader t k) = CreateShader t (f <<< k)
 	map f (DepthFunc func x) = DepthFunc func (f x)
 	map f (Enable cap x) = Enable cap (f x)
+	map f (EnableVertexAttribArray i x) = EnableVertexAttribArray i (f x)
+	map f (GetAttribLocation p s k) = GetAttribLocation p s (f <<< k)
 	map f (GetCanvas k) = GetCanvas (f <<< k)
 	map f (GetDrawingBufferHeight k) = GetDrawingBufferHeight (f <<< k)
 	map f (GetDrawingBufferWidth k) = GetDrawingBufferWidth (f <<< k)
@@ -88,6 +94,12 @@ depthFunc func = liftF $ DepthFunc func unit
 
 enable :: GLenum -> WebGL Unit
 enable cap = liftF $ Enable cap unit
+
+enableVertexAttribArray :: GLuint -> WebGL Unit
+enableVertexAttribArray index = liftF $ EnableVertexAttribArray index unit
+
+getAttribLocation :: WebGLProgram -> String -> WebGL GLuint
+getAttribLocation program name = liftF $ GetAttribLocation program name id
 
 getCanvas :: WebGL CanvasElement
 getCanvas = liftF $ GetCanvas id
@@ -138,6 +150,12 @@ runWebGL gl = runFreeM interpret
 	interpret (Enable cap rest) = do
 		R.enable gl cap
 		return rest
+	interpret (EnableVertexAttribArray index rest) = do
+		R.enableVertexAttribArray gl index
+		return rest
+	interpret (GetAttribLocation program name k) = do
+		index <- R.getAttribLocation gl program name
+		return $ k index
 	interpret (GetCanvas k) = do
 		el <- R.getCanvas gl
 		return $ k el
