@@ -15,3 +15,9 @@ Then a development server can be started using:
 ## Disclaimer
 
 This is my first purely functional project, and my first experiment with WebGL. It probably doesn't reflect best practices!
+
+## To do
+
++ Handle context loss.
++ Throw shader compilation errors.
+
