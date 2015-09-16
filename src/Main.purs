@@ -73,6 +73,7 @@ main = do
 			vertexPositionAttribute <- getAttribLocation program "aVertexPosition"
 			enableVertexAttribArray vertexPositionAttribute
 
+			-- TODO: This will return Nothing if the context is lost
 			Just squareVerticesBuffer <- createBuffer
 			bindBuffer GL.arrayBuffer squareVerticesBuffer
 			bufferData GL.arrayBuffer squareVertices GL.staticDraw
