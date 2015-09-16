@@ -29,6 +29,7 @@ module Graphics.WebGL.Free (
 	getUniformLocation,
 	linkProgram,
 	shaderSource,
+	uniformMatrix4fv,
 	useProgram,
 	vertexAttribPointer,
 	viewport
@@ -38,6 +39,7 @@ import Prelude
 import Control.Monad.Eff
 import Control.Monad.Eff.Console
 import Control.Monad.Free
+import Data.ArrayBuffer.Types (Float32Array())
 import Data.Maybe
 import Graphics.Canvas (Canvas(), CanvasElement())
 import qualified Graphics.WebGL.Raw as R
@@ -72,6 +74,7 @@ data WebGLF a
 	| GetUniformLocation WebGLProgram DOMString (Maybe WebGLUniformLocation -> a)
 	| LinkProgram WebGLProgram a
 	| ShaderSource WebGLShader DOMString a
+	| UniformMatrix4fv WebGLUniformLocation GLboolean Float32Array a
 	| UseProgram WebGLProgram a
 	| VertexAttribPointer AttributeLocation GLint GLenum GLboolean GLsizei GLintptr a
 	| Viewport GLint GLint GLsizei GLsizei a
@@ -101,6 +104,7 @@ instance functorWebGLF :: Functor WebGLF where
 	map f (GetUniformLocation p n k) = GetUniformLocation p n (f <<< k)
 	map f (LinkProgram p x) = LinkProgram p (f x)
 	map f (ShaderSource sh src x) = ShaderSource sh src (f x)
+	map f (UniformMatrix4fv l t v x) = UniformMatrix4fv l t v (f x)
 	map f (UseProgram p x) = UseProgram p (f x)
 	map f (VertexAttribPointer l s t n str o x) = VertexAttribPointer l s t n str o (f x)
 	map f (Viewport x y w h a) = Viewport x y w h (f a)
@@ -178,6 +182,9 @@ linkProgram p = liftF $ LinkProgram p unit
 
 shaderSource :: WebGLShader -> DOMString -> WebGL Unit
 shaderSource sh src = liftF $ ShaderSource sh src unit
+
+uniformMatrix4fv :: WebGLUniformLocation -> GLboolean -> Float32Array -> WebGL Unit
+uniformMatrix4fv location transpose value = liftF $ UniformMatrix4fv location transpose value unit
 
 useProgram :: WebGLProgram -> WebGL Unit
 useProgram p = liftF $ UseProgram p unit
@@ -262,6 +269,9 @@ interpretWebGL gl (LinkProgram p rest) = do
 	return rest
 interpretWebGL gl (ShaderSource sh src rest) = do
 	R.shaderSource gl sh src
+	return rest
+interpretWebGL gl (UniformMatrix4fv location transpose value rest) = do
+	R.uniformMatrix4fv_ gl location transpose value
 	return rest
 interpretWebGL gl (UseProgram p rest) = do
 	R.useProgram gl p
