@@ -20,3 +20,4 @@ This is my first purely functional project, and my first experiment with WebGL. 
 
 + Handle context loss.
 + Add more specific enum types (eg: WebGL error codes) to replace generic Graphics.WebGL.Raw.Enums.
++ Replace matrix library with something backed by Float32Arrays rather than plain-old-arrays.
