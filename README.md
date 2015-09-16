@@ -19,5 +19,3 @@ This is my first purely functional project, and my first experiment with WebGL. 
 ## To do
 
 + Handle context loss.
-+ Throw shader compilation errors.
-
