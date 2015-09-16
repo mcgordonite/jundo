@@ -19,3 +19,4 @@ This is my first purely functional project, and my first experiment with WebGL. 
 ## To do
 
 + Handle context loss.
++ Add more specific enum types (eg: WebGL error codes) to replace generic Graphics.WebGL.Raw.Enums.
