@@ -3,6 +3,7 @@ module Graphics.WebGL.Free (
 	AttributeLocation(..),
 	WebGL(),
 	WebGLF(),
+	debugWebGL,
 	runWebGL,
 	attachShader,
 	bindBuffer,
@@ -33,6 +34,7 @@ module Graphics.WebGL.Free (
 
 import Prelude
 import Control.Monad.Eff
+import Control.Monad.Eff.Console
 import Control.Monad.Free
 import Data.Maybe
 import Graphics.Canvas (Canvas(), CanvasElement())
@@ -174,84 +176,97 @@ useProgram p = liftF $ UseProgram p unit
 viewport :: GLint -> GLint -> GLsizei -> GLsizei -> WebGL Unit
 viewport x y w h = liftF $ Viewport x y w h unit
 
+interpretWebGL :: forall a eff. WebGLContext -> WebGLF (WebGL a) -> Eff (canvas :: Canvas | eff) (WebGL a)
+interpretWebGL gl (AttachShader p s rest) = do
+	R.attachShader gl p s
+	return rest
+interpretWebGL gl (BindBuffer t buffer rest) = do
+	R.bindBuffer gl t buffer
+	return rest
+interpretWebGL gl (BufferData t source usage rest) = do
+	R.bufferData gl t source usage
+	return rest
+interpretWebGL gl (Clear mask rest) = do
+	R.clear gl mask
+	return rest
+interpretWebGL gl (ClearColor r g b a rest) = do
+	R.clearColor gl r g b a
+	return rest
+interpretWebGL gl (CompileShader sh rest) = do
+	R.compileShader gl sh
+	return rest
+interpretWebGL gl (CreateBuffer k) = do
+	buffer <- R.createBuffer gl
+	return $ k buffer
+interpretWebGL gl (CreateProgram k) = do
+	program <- R.createProgram gl
+	return $ k program
+interpretWebGL gl (CreateShader t k) = do
+	shader <- R.createShader gl t
+	return $ k shader
+interpretWebGL gl (DepthFunc func rest) = do
+	R.depthFunc gl func
+	return rest
+interpretWebGL gl (Enable cap rest) = do
+	R.enable gl cap
+	return rest
+interpretWebGL gl (EnableVertexAttribArray (AttributeLocation location) rest) = do
+	R.enableVertexAttribArray gl location
+	return rest
+interpretWebGL gl (GetAttribLocation program name k) = do
+	location <- R.getAttribLocation gl program name
+	if location == -1
+		then return $ k Nothing
+		else return $ k $ Just (AttributeLocation location)
+interpretWebGL gl (GetCanvas k) = do
+	el <- R.getCanvas gl
+	return $ k el
+interpretWebGL gl (GetDrawingBufferHeight k) = do
+	h <- R.getDrawingBufferHeight gl
+	return $ k h
+interpretWebGL gl (GetDrawingBufferWidth k) = do
+	w <- R.getDrawingBufferWidth gl
+	return $ k w
+interpretWebGL gl (GetProgramInfoLog p k) = do
+	maybeLog <- R.getProgramInfoLog gl p
+	return $ k maybeLog
+interpretWebGL gl (GetProgramLinkStatus p k) = do
+	Just b <- R.getProgramParameter gl p GL.linkStatus
+	return $ k b
+interpretWebGL gl (GetShaderCompileStatus s k) = do
+	Just b <- R.getShaderParameter gl s GL.compileStatus
+	return $ k b
+interpretWebGL gl (GetShaderInfoLog s k) = do
+	maybeLog <- R.getShaderInfoLog gl s
+	return $ k maybeLog
+interpretWebGL gl (GetUniformLocation program name k) = do
+	location <- R.getUniformLocation gl program name
+	return $ k location
+interpretWebGL gl (LinkProgram p rest) = do
+	R.linkProgram gl p
+	return rest
+interpretWebGL gl (ShaderSource sh src rest) = do
+	R.shaderSource gl sh src
+	return rest
+interpretWebGL gl (UseProgram p rest) = do
+	R.useProgram gl p
+	return rest
+interpretWebGL gl (Viewport x y w h rest) = do
+	R.viewport gl x y w h
+	return rest
+
 runWebGL :: forall a eff. WebGLContext -> WebGL a -> Eff (canvas :: Canvas | eff) a
-runWebGL gl = runFreeM interpret
+runWebGL = runFreeM <<< interpretWebGL
+
+debugWebGL :: forall a eff. WebGLContext -> WebGL a -> Eff (canvas :: Canvas, console :: CONSOLE | eff) a
+debugWebGL gl = runFreeM interpretDebug
 	where
-	interpret :: forall a. WebGLF (WebGL a) -> Eff (canvas :: Canvas | eff) (WebGL a)
-	interpret (AttachShader p s rest) = do
-		R.attachShader gl p s
-		return rest
-	interpret (BindBuffer t buffer rest) = do
-		R.bindBuffer gl t buffer
-		return rest
-	interpret (BufferData t source usage rest) = do
-		R.bufferData gl t source usage
-		return rest
-	interpret (Clear mask rest) = do
-		R.clear gl mask
-		return rest
-	interpret (ClearColor r g b a rest) = do
-		R.clearColor gl r g b a
-		return rest
-	interpret (CompileShader sh rest) = do
-		R.compileShader gl sh
-		return rest
-	interpret (CreateBuffer k) = do
-		buffer <- R.createBuffer gl
-		return $ k buffer
-	interpret (CreateProgram k) = do
-		program <- R.createProgram gl
-		return $ k program
-	interpret (CreateShader t k) = do
-		shader <- R.createShader gl t
-		return $ k shader
-	interpret (DepthFunc func rest) = do
-		R.depthFunc gl func
-		return rest
-	interpret (Enable cap rest) = do
-		R.enable gl cap
-		return rest
-	interpret (EnableVertexAttribArray (AttributeLocation location) rest) = do
-		R.enableVertexAttribArray gl location
-		return rest
-	interpret (GetAttribLocation program name k) = do
-		location <- R.getAttribLocation gl program name
-		if location == -1
-			then return $ k Nothing
-			else return $ k $ Just (AttributeLocation location)
-	interpret (GetCanvas k) = do
-		el <- R.getCanvas gl
-		return $ k el
-	interpret (GetDrawingBufferHeight k) = do
-		h <- R.getDrawingBufferHeight gl
-		return $ k h
-	interpret (GetDrawingBufferWidth k) = do
-		w <- R.getDrawingBufferWidth gl
-		return $ k w
-	interpret (GetProgramInfoLog p k) = do
-		maybeLog <- R.getProgramInfoLog gl p
-		return $ k maybeLog
-	interpret (GetProgramLinkStatus p k) = do
-		Just b <- R.getProgramParameter gl p GL.linkStatus
-		return $ k b
-	interpret (GetShaderCompileStatus s k) = do
-		Just b <- R.getShaderParameter gl s GL.compileStatus
-		return $ k b
-	interpret (GetShaderInfoLog s k) = do
-		maybeLog <- R.getShaderInfoLog gl s
-		return $ k maybeLog
-	interpret (GetUniformLocation program name k) = do
-		location <- R.getUniformLocation gl program name
-		return $ k location
-	interpret (LinkProgram p rest) = do
-		R.linkProgram gl p
-		return rest
-	interpret (ShaderSource sh src rest) = do
-		R.shaderSource gl sh src
-		return rest
-	interpret (UseProgram p rest) = do
-		R.useProgram gl p
-		return rest
-	interpret (Viewport x y w h rest) = do
-		R.viewport gl x y w h
-		return rest
+	interpretDebug :: forall a. WebGLF (WebGL a) -> Eff (canvas :: Canvas, console :: CONSOLE | eff) (WebGL a)
+	interpretDebug comp = do
+		rest <- interpretWebGL gl comp
+		err <- R.getError gl
+		if err == 0
+			then return rest
+			else do
+				error $ "WebGL Error: " ++ show err
+				return rest
