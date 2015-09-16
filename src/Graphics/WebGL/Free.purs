@@ -29,6 +29,7 @@ module Graphics.WebGL.Free (
 	linkProgram,
 	shaderSource,
 	useProgram,
+	vertexAttribPointer,
 	viewport
 	) where
 
@@ -70,6 +71,7 @@ data WebGLF a
 	| LinkProgram WebGLProgram a
 	| ShaderSource WebGLShader DOMString a
 	| UseProgram WebGLProgram a
+	| VertexAttribPointer AttributeLocation GLint GLenum GLboolean GLsizei GLintptr a
 	| Viewport GLint GLint GLsizei GLsizei a
 
 instance functorWebGLF :: Functor WebGLF where
@@ -97,6 +99,7 @@ instance functorWebGLF :: Functor WebGLF where
 	map f (LinkProgram p x) = LinkProgram p (f x)
 	map f (ShaderSource sh src x) = ShaderSource sh src (f x)
 	map f (UseProgram p x) = UseProgram p (f x)
+	map f (VertexAttribPointer l s t n str o x) = VertexAttribPointer l s t n str o (f x)
 	map f (Viewport x y w h a) = Viewport x y w h (f a)
 
 type WebGL = Free WebGLF
@@ -172,6 +175,9 @@ shaderSource sh src = liftF $ ShaderSource sh src unit
 
 useProgram :: WebGLProgram -> WebGL Unit
 useProgram p = liftF $ UseProgram p unit
+
+vertexAttribPointer :: AttributeLocation -> GLint -> GLenum -> GLboolean -> GLsizei -> GLintptr -> WebGL Unit
+vertexAttribPointer l s t n str o = liftF $ VertexAttribPointer l s t n str o unit
 
 viewport :: GLint -> GLint -> GLsizei -> GLsizei -> WebGL Unit
 viewport x y w h = liftF $ Viewport x y w h unit
@@ -250,6 +256,9 @@ interpretWebGL gl (ShaderSource sh src rest) = do
 	return rest
 interpretWebGL gl (UseProgram p rest) = do
 	R.useProgram gl p
+	return rest
+interpretWebGL gl (VertexAttribPointer (AttributeLocation l) s t n str o rest) = do
+	R.vertexAttribPointer gl l s t n o str
 	return rest
 interpretWebGL gl (Viewport x y w h rest) = do
 	R.viewport gl x y w h
