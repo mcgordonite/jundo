@@ -265,7 +265,7 @@ debugWebGL gl = runFreeM interpretDebug
 	interpretDebug comp = do
 		rest <- interpretWebGL gl comp
 		err <- R.getError gl
-		if err == 0
+		if err == GL.noError
 			then return rest
 			else do
 				error $ "WebGL Error: " ++ show err
