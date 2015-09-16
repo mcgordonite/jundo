@@ -2,7 +2,9 @@ module Main where
 
 import Prelude
 import Control.Monad.Eff
+import Control.Monad.Eff.Exception
 import Data.ArrayBuffer.Types (Float32Array())
+import Data.Either
 import Data.Int.Bits
 import Data.Maybe
 import Data.Nullable
@@ -17,7 +19,7 @@ import qualified DOM.HTML.Types as D
 import qualified DOM.HTML.Window as D
 import Graphics.WebGL.Context
 import Graphics.WebGL.Free
-import Graphics.WebGL.Free.Shaders
+import Graphics.WebGL.Free.Shaders (compileAndLinkProgram)
 import qualified Graphics.WebGL.Raw.Enums as GL
 import Graphics.WebGL.Raw.Types
 import Graphics.Canvas (Canvas(), CanvasElement(), getCanvasElementById, setCanvasDimensions)
@@ -55,28 +57,27 @@ tick el gl = do
 		clear $ GL.colorBufferBit .|. GL.depthBufferBit
 	D.requestAnimationFrame $ tick el gl
 
-main :: Eff (canvas :: Canvas, dom :: D.DOM) Unit
+main :: Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION) Unit
 main = do
 	fragmentSource <- loadShaderSourceFromElement fragmentShaderId
 	vertexSource <- loadShaderSourceFromElement vertexShaderId
 	Just el <- getCanvasElementById "easel"
 	gl <- getWebGLContext el
-	runWebGL gl do
-		fragmentShader <- buildShader fragmentSource GL.fragmentShader
-		vertexShader <- buildShader vertexSource GL.vertexShader
-		program <- buildProgram vertexShader fragmentShader
-		useProgram program
+	eitherProgram <- runWebGL gl $ compileAndLinkProgram vertexSource fragmentSource
+	case eitherProgram of
+		Left err -> throwException $ error err
+		Right program -> runWebGL gl do
+			useProgram program
+			Just mvMatrixLocation <- getUniformLocation program "uMVMatrix"
+			Just pMatrixLocation <- getUniformLocation program "uPMatrix"
+			vertexPositionAttribute <- getAttribLocation program "aVertexPosition"
+			enableVertexAttribArray vertexPositionAttribute
 
-		Just mvMatrixLocation <- getUniformLocation program "uMVMatrix"
-		Just pMatrixLocation <- getUniformLocation program "uPMatrix"
-		vertexPositionAttribute <- getAttribLocation program "aVertexPosition"
-		enableVertexAttribArray vertexPositionAttribute
+			Just squareVerticesBuffer <- createBuffer
+			bindBuffer GL.arrayBuffer squareVerticesBuffer
+			bufferData GL.arrayBuffer squareVertices GL.staticDraw
 
-		Just squareVerticesBuffer <- createBuffer
-		bindBuffer GL.arrayBuffer squareVerticesBuffer
-		bufferData GL.arrayBuffer squareVertices GL.staticDraw
-
-		clearColor 0.0 0.0 0.0 1.0
-		enable GL.depthTest
-		depthFunc GL.lequal
+			clearColor 0.0 0.0 0.0 1.0
+			enable GL.depthTest
+			depthFunc GL.lequal
 	tick el gl

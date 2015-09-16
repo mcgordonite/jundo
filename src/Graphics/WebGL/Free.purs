@@ -19,6 +19,10 @@ module Graphics.WebGL.Free (
 	getCanvas,
 	getDrawingBufferHeight,
 	getDrawingBufferWidth,
+	getProgramInfoLog,
+	getProgramLinkStatus,
+	getShaderCompileStatus,
+	getShaderInfoLog,
 	getUniformLocation,
 	linkProgram,
 	shaderSource,
@@ -33,6 +37,7 @@ import Data.Maybe
 import Graphics.Canvas (Canvas(), CanvasElement())
 import qualified Graphics.WebGL.Raw as R
 import qualified Graphics.WebGL.Raw.Extra as R
+import qualified Graphics.WebGL.Raw.Enums as GL
 import Graphics.WebGL.Raw.Types
 
 data WebGLF a
@@ -52,6 +57,10 @@ data WebGLF a
 	| GetCanvas (CanvasElement -> a)
 	| GetDrawingBufferHeight (Int -> a)
 	| GetDrawingBufferWidth (Int -> a)
+	| GetProgramInfoLog WebGLProgram (Maybe DOMString -> a)
+	| GetProgramLinkStatus WebGLProgram (Boolean -> a)
+	| GetShaderCompileStatus WebGLShader (Boolean -> a)
+	| GetShaderInfoLog WebGLShader (Maybe DOMString -> a)
 	| GetUniformLocation WebGLProgram DOMString (Maybe WebGLUniformLocation -> a)
 	| LinkProgram WebGLProgram a
 	| ShaderSource WebGLShader DOMString a
@@ -75,6 +84,10 @@ instance functorWebGLF :: Functor WebGLF where
 	map f (GetCanvas k) = GetCanvas (f <<< k)
 	map f (GetDrawingBufferHeight k) = GetDrawingBufferHeight (f <<< k)
 	map f (GetDrawingBufferWidth k) = GetDrawingBufferWidth (f <<< k)
+	map f (GetProgramInfoLog s k) = GetProgramInfoLog s (f <<< k)
+	map f (GetProgramLinkStatus p k) = GetProgramLinkStatus p (f <<< k)
+	map f (GetShaderCompileStatus s k) = GetShaderCompileStatus s (f <<< k)
+	map f (GetShaderInfoLog s k) = GetShaderInfoLog s (f <<< k)
 	map f (GetUniformLocation p n k) = GetUniformLocation p n (f <<< k)
 	map f (LinkProgram p x) = LinkProgram p (f x)
 	map f (ShaderSource sh src x) = ShaderSource sh src (f x)
@@ -130,6 +143,18 @@ getDrawingBufferHeight = liftF $ GetDrawingBufferHeight id
 
 getDrawingBufferWidth :: WebGL Int
 getDrawingBufferWidth = liftF $ GetDrawingBufferWidth id
+
+getProgramInfoLog :: WebGLProgram -> WebGL (Maybe DOMString)
+getProgramInfoLog p = liftF $ GetProgramInfoLog p id
+
+getProgramLinkStatus :: WebGLProgram -> WebGL Boolean
+getProgramLinkStatus p = liftF $ GetProgramLinkStatus p id
+
+getShaderCompileStatus :: WebGLShader -> WebGL Boolean
+getShaderCompileStatus s = liftF $ GetShaderCompileStatus s id
+
+getShaderInfoLog :: WebGLShader -> WebGL (Maybe DOMString)
+getShaderInfoLog s = liftF $ GetShaderInfoLog s id
 
 getUniformLocation :: WebGLProgram -> DOMString -> WebGL (Maybe WebGLUniformLocation)
 getUniformLocation program name = liftF $ GetUniformLocation program name id
@@ -198,6 +223,18 @@ runWebGL gl = runFreeM interpret
 	interpret (GetDrawingBufferWidth k) = do
 		w <- R.getDrawingBufferWidth gl
 		return $ k w
+	interpret (GetProgramInfoLog p k) = do
+		maybeLog <- R.getProgramInfoLog gl p
+		return $ k maybeLog
+	interpret (GetProgramLinkStatus p k) = do
+		Just b <- R.getProgramParameter gl p GL.linkStatus
+		return $ k b
+	interpret (GetShaderCompileStatus s k) = do
+		Just b <- R.getShaderParameter gl s GL.compileStatus
+		return $ k b
+	interpret (GetShaderInfoLog s k) = do
+		maybeLog <- R.getShaderInfoLog gl s
+		return $ k maybeLog
 	interpret (GetUniformLocation program name k) = do
 		location <- R.getUniformLocation gl program name
 		return $ k location
