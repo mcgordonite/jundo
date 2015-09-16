@@ -1,5 +1,6 @@
 -- Free Monad for WebGL
 module Graphics.WebGL.Free (
+	AttributeLocation(..),
 	WebGL(),
 	WebGLF(),
 	runWebGL,
@@ -40,6 +41,8 @@ import qualified Graphics.WebGL.Raw.Extra as R
 import qualified Graphics.WebGL.Raw.Enums as GL
 import Graphics.WebGL.Raw.Types
 
+newtype AttributeLocation = AttributeLocation GLuint
+
 data WebGLF a
 	= AttachShader WebGLProgram WebGLShader a
 	| BindBuffer GLenum WebGLBuffer a
@@ -52,8 +55,8 @@ data WebGLF a
 	| CreateShader GLenum (Maybe WebGLShader -> a)
 	| DepthFunc GLenum a
 	| Enable GLenum a
-	| EnableVertexAttribArray GLuint a
-	| GetAttribLocation WebGLProgram DOMString (GLuint -> a)
+	| EnableVertexAttribArray AttributeLocation a
+	| GetAttribLocation WebGLProgram DOMString (Maybe AttributeLocation -> a)
 	| GetCanvas (CanvasElement -> a)
 	| GetDrawingBufferHeight (Int -> a)
 	| GetDrawingBufferWidth (Int -> a)
@@ -129,10 +132,10 @@ depthFunc func = liftF $ DepthFunc func unit
 enable :: GLenum -> WebGL Unit
 enable cap = liftF $ Enable cap unit
 
-enableVertexAttribArray :: GLuint -> WebGL Unit
-enableVertexAttribArray index = liftF $ EnableVertexAttribArray index unit
+enableVertexAttribArray :: AttributeLocation -> WebGL Unit
+enableVertexAttribArray location = liftF $ EnableVertexAttribArray location unit
 
-getAttribLocation :: WebGLProgram -> DOMString -> WebGL GLuint
+getAttribLocation :: WebGLProgram -> DOMString -> WebGL (Maybe AttributeLocation)
 getAttribLocation program name = liftF $ GetAttribLocation program name id
 
 getCanvas :: WebGL CanvasElement
@@ -208,12 +211,14 @@ runWebGL gl = runFreeM interpret
 	interpret (Enable cap rest) = do
 		R.enable gl cap
 		return rest
-	interpret (EnableVertexAttribArray index rest) = do
-		R.enableVertexAttribArray gl index
+	interpret (EnableVertexAttribArray (AttributeLocation location) rest) = do
+		R.enableVertexAttribArray gl location
 		return rest
 	interpret (GetAttribLocation program name k) = do
-		index <- R.getAttribLocation gl program name
-		return $ k index
+		location <- R.getAttribLocation gl program name
+		if location == -1
+			then return $ k Nothing
+			else return $ k $ Just (AttributeLocation location)
 	interpret (GetCanvas k) = do
 		el <- R.getCanvas gl
 		return $ k el
