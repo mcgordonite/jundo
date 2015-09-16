@@ -15,6 +15,7 @@ module Graphics.WebGL.Free (
 	compileShader,
 	createShader,
 	depthFunc,
+	drawArrays,
 	enable,
 	enableVertexAttribArray,
 	getAttribLocation,
@@ -57,6 +58,7 @@ data WebGLF a
 	| CreateProgram (Maybe WebGLProgram -> a)
 	| CreateShader GLenum (Maybe WebGLShader -> a)
 	| DepthFunc GLenum a
+	| DrawArrays GLenum GLint GLsizei a
 	| Enable GLenum a
 	| EnableVertexAttribArray AttributeLocation a
 	| GetAttribLocation WebGLProgram DOMString (Maybe AttributeLocation -> a)
@@ -85,6 +87,7 @@ instance functorWebGLF :: Functor WebGLF where
 	map f (CreateProgram k) = CreateProgram (f <<< k)
 	map f (CreateShader t k) = CreateShader t (f <<< k)
 	map f (DepthFunc func x) = DepthFunc func (f x)
+	map f (DrawArrays mode first count x) = DrawArrays mode first count (f x)
 	map f (Enable cap x) = Enable cap (f x)
 	map f (EnableVertexAttribArray i x) = EnableVertexAttribArray i (f x)
 	map f (GetAttribLocation p s k) = GetAttribLocation p s (f <<< k)
@@ -133,6 +136,9 @@ createShader t = liftF $ CreateShader t id
 
 depthFunc :: GLenum -> WebGL Unit
 depthFunc func = liftF $ DepthFunc func unit
+
+drawArrays :: GLenum -> GLint -> GLsizei -> WebGL Unit
+drawArrays mode first count = liftF $ DrawArrays mode first count unit
 
 enable :: GLenum -> WebGL Unit
 enable cap = liftF $ Enable cap unit
@@ -212,6 +218,9 @@ interpretWebGL gl (CreateShader t k) = do
 	return $ k shader
 interpretWebGL gl (DepthFunc func rest) = do
 	R.depthFunc gl func
+	return rest
+interpretWebGL gl (DrawArrays mode first count rest) = do
+	R.drawArrays gl mode first count
 	return rest
 interpretWebGL gl (Enable cap rest) = do
 	R.enable gl cap
