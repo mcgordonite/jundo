@@ -12,3 +12,11 @@ exports.clientWidth = function(el) {
 	};
 };
 
+exports.requestFullscreen = function(el) {
+	var requestFullscreen = el.requestFullscreen || el.mozRequestFullScreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+
+	return function() {
+		requestFullscreen.call(el);
+	};
+};
+
