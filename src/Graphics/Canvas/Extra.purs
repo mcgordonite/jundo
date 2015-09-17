@@ -1,11 +1,10 @@
--- Extra canvas stuff that (I think) is missing from the purescript-canvas package
 module Graphics.Canvas.Extra where
 
-import Control.Monad.Eff
-import Graphics.Canvas
+import DOM.Node.Types
+import Graphics.Canvas (CanvasElement())
+import Unsafe.Coerce
 
--- | Get the inner width of the canvas element
-foreign import clientWidth :: forall eff. CanvasElement -> Eff (canvas :: Canvas | eff) Number
+-- | Convert a canvas element to a DOM element
+toElement :: CanvasElement -> Element
+toElement = unsafeCoerce
 
--- | Get the inner height of the canvas element
-foreign import clientHeight :: forall eff. CanvasElement -> Eff (canvas :: Canvas | eff) Number

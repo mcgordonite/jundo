@@ -17,6 +17,7 @@ import Data.Maybe
 import Data.Tuple
 import Data.TypedArray (asFloat32Array)
 import qualified DOM as D
+import qualified DOM.Node.Element.Extra as D
 import qualified DOM.RequestAnimationFrame as D
 import Graphics.WebGL.Context
 import Graphics.WebGL.Free
@@ -40,9 +41,9 @@ squareVertices = asFloat32Array [1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, 
 
 tick :: forall eff. CanvasElement -> WebGLContext -> WebGLBuffer -> ProgramLocations -> Number -> Number -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now | eff) Unit
 tick el gl buffer (ProgramLocations locs) previousTime previousAngle = do
-	h <- clientHeight el
-	w <- clientWidth el
-	setCanvasDimensions {height: h, width: w} el
+	h <- D.clientHeight $ toElement el
+	w <- D.clientWidth $ toElement el
+	setCanvasDimensions {height: toNumber h, width: toNumber w} el
 	Milliseconds currentTime <- nowEpochMilliseconds
 	currentAngle <- pure $ previousAngle + 0.001 * (currentTime - previousTime)
 	runWebGL gl do

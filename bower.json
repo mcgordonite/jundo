@@ -20,6 +20,7 @@
 		"purescript-requestanimationframe": "~1.0.0",
 		"purescript-tuples": "~0.4.0",
 		"purescript-typedarray": "~0.4.6",
+		"purescript-unsafe-coerce": "~0.1.0",
 		"purescript-vector": "~0.2.0",
 		"purescript-webgl-raw": "https://github.com/Jonplussed/purescript-webgl-raw.git#~0.5.0"
 	}

@@ -1,4 +1,4 @@
-// module Graphics.Canvas.Extra
+// module DOM.Node.Element.Extra
 
 exports.clientHeight = function(el) {
 	return function() {
@@ -11,3 +11,4 @@ exports.clientWidth = function(el) {
 		return el.clientWidth;
 	};
 };
+
