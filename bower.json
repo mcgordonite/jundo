@@ -8,6 +8,7 @@
 		"purescript-arraybuffer-types": "~0.2.0",
 		"purescript-canvas": "~0.3.2",
 		"purescript-console": "~0.1.1",
+		"purescript-datetime": "~0.9.0",
 		"purescript-dom": "~0.2.6",
 		"purescript-either": "~0.2.2",
 		"purescript-exceptions": "~0.3.0",

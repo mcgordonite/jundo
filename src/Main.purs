@@ -5,12 +5,14 @@ import Shaders
 import Control.Monad.Eff
 import Control.Monad.Eff.Exception
 import Data.ArrayBuffer.Types (Float32Array())
+import Data.Date (Now(), nowEpochMilliseconds)
+import Data.Time (Milliseconds(..))
 import Data.Either
 import Data.Int (toNumber)
 import Data.Int.Bits
 import Data.Matrix
 import Data.Matrix4
-import Data.Vector3 (vec3)
+import Data.Vector3 (vec3, j3)
 import Data.Maybe
 import Data.Tuple
 import Data.TypedArray (asFloat32Array)
@@ -26,8 +28,8 @@ import Graphics.Canvas.Extra
 matrixToFloat32Array :: Mat4 -> Float32Array
 matrixToFloat32Array = asFloat32Array <<< toArray
 
-mvMatrix :: Float32Array
-mvMatrix = matrixToFloat32Array $ translate (vec3 0.0 0.0 (-6.0)) identity
+mvMatrix :: Number -> Float32Array
+mvMatrix angle = matrixToFloat32Array $ rotate angle j3 $ translate (vec3 0.0 0.0 (-6.0)) identity
 
 perspectiveMatrix :: Int -> Int -> Float32Array
 perspectiveMatrix bufferWidth bufferHeight = matrixToFloat32Array $
@@ -36,24 +38,26 @@ perspectiveMatrix bufferWidth bufferHeight = matrixToFloat32Array $
 squareVertices :: Float32Array
 squareVertices = asFloat32Array [1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0]
 
-tick :: forall eff. CanvasElement -> WebGLContext -> WebGLBuffer -> ProgramLocations -> Eff (canvas :: Canvas, dom :: D.DOM | eff) Unit
-tick el gl buffer (ProgramLocations locs) = do
+tick :: forall eff. CanvasElement -> WebGLContext -> WebGLBuffer -> ProgramLocations -> Number -> Number -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now | eff) Unit
+tick el gl buffer (ProgramLocations locs) previousTime previousAngle = do
 	h <- clientHeight el
 	w <- clientWidth el
 	setCanvasDimensions {height: h, width: w} el
+	Milliseconds currentTime <- nowEpochMilliseconds
+	currentAngle <- pure $ previousAngle + 0.001 * (currentTime - previousTime)
 	runWebGL gl do
 		bufferHeight <- getDrawingBufferHeight
 		bufferWidth <- getDrawingBufferWidth
 		viewport 0 0 bufferWidth bufferHeight
 		clear $ GL.colorBufferBit .|. GL.depthBufferBit
 		uniformMatrix4fv locs.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
-		uniformMatrix4fv locs.mvMatrix false mvMatrix
+		uniformMatrix4fv locs.mvMatrix false $ mvMatrix currentAngle
 		bindBuffer GL.arrayBuffer buffer
 		vertexAttribPointer locs.aVertex 3 GL.float false 0 0
 		drawArrays GL.triangleStrip 0 4
-	D.requestAnimationFrame $ tick el gl buffer (ProgramLocations locs)
+	D.requestAnimationFrame $ tick el gl buffer (ProgramLocations locs) currentTime currentAngle
 
-main :: Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION) Unit
+main :: Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION, now :: Now) Unit
 main = do
 	Just el <- getCanvasElementById "easel"
 	gl <- getWebGLContext el
@@ -70,4 +74,5 @@ main = do
 		enable GL.depthTest
 		depthFunc GL.lequal
 		return buffer
-	tick el gl buffer locations
+	Milliseconds time <- nowEpochMilliseconds
+	tick el gl buffer locations time 0.0
