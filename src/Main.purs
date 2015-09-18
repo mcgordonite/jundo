@@ -19,9 +19,9 @@ import Data.TypedArray (asFloat32Array)
 import qualified DOM as D
 import qualified DOM.Event.EventTarget as D
 import qualified DOM.Event.EventTypes (click) as D
-import qualified DOM.Event.Extra as D
+import qualified DOM.Event.Experimental as D
 import qualified DOM.Event.Types as D
-import qualified DOM.Node.Element.Extra as D
+import qualified DOM.Node.Element.Experimental as D
 import qualified DOM.Node.Types as D
 import qualified DOM.RequestAnimationFrame as D
 import Graphics.WebGL.Context
@@ -29,7 +29,7 @@ import Graphics.WebGL.Free
 import qualified Graphics.WebGL.Raw.Enums as GL
 import Graphics.WebGL.Raw.Types
 import Graphics.Canvas (Canvas(), CanvasElement(), getCanvasElementById, setCanvasDimensions)
-import Graphics.Canvas.Extra
+import Graphics.Canvas.Element
 
 matrixToFloat32Array :: Mat4 -> Float32Array
 matrixToFloat32Array = asFloat32Array <<< toArray

@@ -1,4 +1,4 @@
-// module DOM.Node.Document.Extra
+// module DOM.Node.Document.Experimental
 
 var fullscreenPrefix = 'fullscreen';
 
@@ -18,7 +18,7 @@ exports.fullscreenEnabled = function(doc) {
 
 exports.fullscreenElement = function(doc) {
 	return function() {
-		return doc[fullscreenPrefix + 'Element';
+		return doc[fullscreenPrefix + 'Element'];
 	};
 };
 
@@ -30,19 +30,19 @@ exports.exitPointerLock = function(doc) {
 	};
 };
 
-var pointerLockPrefix = 'pointerLock';
+var pointerLockElementProperty = 'pointerLockElement';
 
 if (Document.prototype.webkitPointerLockElement !== undefined) {
-	pointerLockPrefix = 'webkitPointerLock';
+	pointerLockElementProperty = 'webkitPointerLockElement';
 } else if (Document.prototype.mozPointerLockElement !== undefined) {
-	pointerLockPrefix = 'mozPointerLock';
+	pointerLockElementProperty = 'mozPointerLockElement';
 } else if (Document.prototype.msPointerLockElement !== undefined) {
-	pointerLockPrefix = 'msPointerLock';
+	pointerLockElementProperty = 'msPointerLockElement';
 }
 
 exports.pointerLockElement = function(doc) {
 	return function() {
-		return doc[pointerLockPrefix + 'Element';
+		return doc[pointerLockElementProperty];
 	};
 };
 

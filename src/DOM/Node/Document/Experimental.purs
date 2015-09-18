@@ -1,4 +1,5 @@
-module DOM.Node.Document.Extra where
+-- Experimental Eocument APIs not supported by the purescript-dom library
+module DOM.Node.Document.Experimental where
 
 import Prelude
 import Control.Monad.Eff

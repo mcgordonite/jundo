@@ -1,4 +1,4 @@
-// module DOM.Node.Element.Extra
+// module DOM.Node.Element.Experimental
 
 exports.clientHeight = function(el) {
 	return function() {

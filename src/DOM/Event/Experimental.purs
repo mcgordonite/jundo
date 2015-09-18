@@ -1,4 +1,5 @@
-module DOM.Event.Extra (
+-- Experimental Event APIs not supported by the purescript-dom library
+module DOM.Event.Experimental (
 	fullscreenChange
 	) where
 
