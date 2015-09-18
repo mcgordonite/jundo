@@ -8,4 +8,6 @@ import DOM.Node.Types
 
 foreign import fullscreenElement :: forall eff. Document -> Eff (dom :: DOM | eff) (Nullable Element)
 foreign import fullscreenEnabled :: forall eff. Document -> Eff (dom :: DOM | eff) Boolean
-
+foreign import exitPointerLock :: forall eff. Document -> Eff (dom :: DOM | eff) Unit
+foreign import pointerLockElement :: forall eff. Document -> Eff (dom :: DOM | eff) (Nullable Element)
+ 

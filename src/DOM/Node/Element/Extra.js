@@ -20,3 +20,11 @@ exports.requestFullscreen = function(el) {
 	};
 };
 
+var pointerLockFunction = Element.prototype.requestPointerLock || Element.ptototype.webkitRequestPointerLock || Element.prototype.mozRequestPointerLock || Element.prototype.msRequestPointerLock;
+
+exports.requestPointerLock = function(el) {
+	return function() {
+		pointerLockFunction.call(el);
+	};
+};
+
