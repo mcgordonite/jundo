@@ -12,11 +12,11 @@ exports.clientWidth = function(el) {
 	};
 };
 
-exports.requestFullscreen = function(el) {
-	var requestFullscreen = el.requestFullscreen || el.mozRequestFullScreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+var fullscreenFunction = Element.prototype.requestFullscreen || Element.prototype.webkitRequestFullScreen || Element.prototype.mozRequestFullScreen || Element.prototpe.msRequestFullScreen;
 
+exports.requestFullscreen = function(el) {
 	return function() {
-		requestFullscreen.call(el);
+		fullscreenFunction.call(el);
 	};
 };
 
