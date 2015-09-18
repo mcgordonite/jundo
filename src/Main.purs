@@ -45,7 +45,10 @@ squareVertices :: Float32Array
 squareVertices = asFloat32Array [1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0]
 
 canvasClick :: forall eff. CanvasElement -> D.Event -> Eff (dom :: D.DOM | eff) Unit
-canvasClick el event = D.requestFullscreen $ toElement el
+canvasClick canvas event = do
+	el <- pure $ toElement canvas
+	D.requestFullscreen el
+	D.requestPointerLock el
 
 tick :: forall eff. CanvasElement -> WebGLContext -> WebGLBuffer -> ProgramLocations -> Number -> Number -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now | eff) Unit
 tick el gl buffer (ProgramLocations locs) previousTime previousAngle = do
