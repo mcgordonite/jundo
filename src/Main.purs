@@ -17,7 +17,12 @@ import Data.Maybe
 import Data.Tuple
 import Data.TypedArray (asFloat32Array)
 import qualified DOM as D
+import qualified DOM.Event.EventTarget as D
+import qualified DOM.Event.EventTypes (click) as D
+import qualified DOM.Event.Extra as D
+import qualified DOM.Event.Types as D
 import qualified DOM.Node.Element.Extra as D
+import qualified DOM.Node.Types as D
 import qualified DOM.RequestAnimationFrame as D
 import Graphics.WebGL.Context
 import Graphics.WebGL.Free
@@ -38,6 +43,9 @@ perspectiveMatrix bufferWidth bufferHeight = matrixToFloat32Array $
 
 squareVertices :: Float32Array
 squareVertices = asFloat32Array [1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0]
+
+canvasClick :: forall eff. CanvasElement -> D.Event -> Eff (dom :: D.DOM | eff) Unit
+canvasClick el event = D.requestFullscreen $ toElement el
 
 tick :: forall eff. CanvasElement -> WebGLContext -> WebGLBuffer -> ProgramLocations -> Number -> Number -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now | eff) Unit
 tick el gl buffer (ProgramLocations locs) previousTime previousAngle = do
@@ -61,6 +69,7 @@ tick el gl buffer (ProgramLocations locs) previousTime previousAngle = do
 main :: Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION, now :: Now) Unit
 main = do
 	Just el <- getCanvasElementById "easel"
+	D.addEventListener D.click (D.eventListener $ canvasClick el) false (D.elementToEventTarget $ toElement el)
 	gl <- getWebGLContext el
 	Tuple program locations <- initialiseShaderProgram gl
 	buffer <- runWebGL gl do
