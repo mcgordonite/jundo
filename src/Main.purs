@@ -1,6 +1,7 @@
 module Main where
 
 import Prelude
+import Cube
 import Shaders
 import Control.Monad.Eff
 import Control.Monad.Eff.Exception
@@ -41,17 +42,14 @@ perspectiveMatrix :: Int -> Int -> Float32Array
 perspectiveMatrix bufferWidth bufferHeight = matrixToFloat32Array $
 	makePerspective 45.0 (toNumber bufferWidth / toNumber bufferHeight) 0.1 100.0
 
-squareVertices :: Float32Array
-squareVertices = asFloat32Array [1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0]
-
 canvasClick :: forall eff. CanvasElement -> D.Event -> Eff (dom :: D.DOM | eff) Unit
 canvasClick canvas event = do
 	el <- pure $ toElement canvas
 	D.requestFullscreen el
 	D.requestPointerLock el
 
-tick :: forall eff. CanvasElement -> WebGLContext -> WebGLBuffer -> ProgramLocations -> Number -> Number -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now | eff) Unit
-tick el gl buffer (ProgramLocations locs) previousTime previousAngle = do
+tick :: forall eff. CanvasElement -> WebGLContext -> (Tuple WebGLBuffer WebGLBuffer) -> ProgramLocations -> Number -> Number -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now | eff) Unit
+tick el gl (Tuple cubeVertexBuffer cubeIndexBuffer) (ProgramLocations locs) previousTime previousAngle = do
 	h <- D.clientHeight $ toElement el
 	w <- D.clientWidth $ toElement el
 	setCanvasDimensions {height: toNumber h, width: toNumber w} el
@@ -61,13 +59,16 @@ tick el gl buffer (ProgramLocations locs) previousTime previousAngle = do
 		bufferHeight <- getDrawingBufferHeight
 		bufferWidth <- getDrawingBufferWidth
 		viewport 0 0 bufferWidth bufferHeight
+
 		clear $ GL.colorBufferBit .|. GL.depthBufferBit
 		uniformMatrix4fv locs.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
 		uniformMatrix4fv locs.mvMatrix false $ mvMatrix currentAngle
-		bindBuffer GL.arrayBuffer buffer
+
+		bindBuffer GL.arrayBuffer cubeVertexBuffer
 		vertexAttribPointer locs.aVertex 3 GL.float false 0 0
-		drawArrays GL.triangleStrip 0 4
-	D.requestAnimationFrame $ tick el gl buffer (ProgramLocations locs) currentTime currentAngle
+		bindBuffer GL.elementArrayBuffer cubeIndexBuffer
+		drawElements GL.triangles 36 GL.unsignedShort 0
+	D.requestAnimationFrame $ tick el gl (Tuple cubeVertexBuffer cubeIndexBuffer) (ProgramLocations locs) currentTime currentAngle
 
 main :: Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION, now :: Now) Unit
 main = do
@@ -75,17 +76,11 @@ main = do
 	D.addEventListener D.click (D.eventListener $ canvasClick el) false (D.elementToEventTarget $ toElement el)
 	gl <- getWebGLContext el
 	Tuple program locations <- initialiseShaderProgram gl
-	buffer <- runWebGL gl do
-		useProgram program
-
-		-- TODO: This will return Nothing if the context is lost
-		Just buffer <- createBuffer
-		bindBuffer GL.arrayBuffer buffer
-		bufferFloat32Data GL.arrayBuffer squareVertices GL.staticDraw
-
+	buffers <- runWebGL gl do
 		clearColor 0.0 0.0 0.0 1.0
 		enable GL.depthTest
 		depthFunc GL.lequal
-		return buffer
+		useProgram program
+		initialiseBuffers
 	Milliseconds time <- nowEpochMilliseconds
-	tick el gl buffer locations time 0.0
+	tick el gl buffers locations time 0.0
