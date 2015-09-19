@@ -81,7 +81,7 @@ main = do
 		-- TODO: This will return Nothing if the context is lost
 		Just buffer <- createBuffer
 		bindBuffer GL.arrayBuffer buffer
-		bufferData GL.arrayBuffer squareVertices GL.staticDraw
+		bufferFloat32Data GL.arrayBuffer squareVertices GL.staticDraw
 
 		clearColor 0.0 0.0 0.0 1.0
 		enable GL.depthTest

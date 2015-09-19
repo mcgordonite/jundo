@@ -7,7 +7,15 @@ module Graphics.WebGL.Free (
 	runWebGL,
 	attachShader,
 	bindBuffer,
-	bufferData,
+	bufferInt8Data,
+	bufferInt16Data,
+	bufferInt32Data,
+	bufferUint8Data,
+	bufferUint16Data,
+	bufferUint32Data,
+	bufferUint8ClampedData,
+	bufferFloat32Data,
+	bufferFloat64Data,
 	clear,
 	createBuffer,
 	clearColor,
@@ -40,7 +48,7 @@ import Prelude
 import Control.Monad.Eff
 import Control.Monad.Eff.Console
 import Control.Monad.Free
-import Data.ArrayBuffer.Types (Float32Array())
+import qualified Data.ArrayBuffer.Types as A
 import Data.Maybe
 import Graphics.Canvas (Canvas(), CanvasElement())
 import qualified Graphics.WebGL.Raw as R
@@ -53,7 +61,15 @@ newtype AttributeLocation = AttributeLocation GLuint
 data WebGLF a
 	= AttachShader WebGLProgram WebGLShader a
 	| BindBuffer GLenum WebGLBuffer a
-	| BufferData GLenum BufferDataSource GLenum a
+	| BufferInt8Data GLenum A.Int8Array GLenum a
+	| BufferInt16Data GLenum A.Int16Array GLenum a
+	| BufferInt32Data GLenum A.Int32Array GLenum a
+	| BufferUint8Data GLenum A.Uint8Array GLenum a
+	| BufferUint16Data GLenum A.Uint16Array GLenum a
+	| BufferUint32Data GLenum A.Uint32Array GLenum a
+	| BufferUint8ClampedData GLenum A.Uint8ClampedArray GLenum a
+	| BufferFloat32Data GLenum A.Float32Array GLenum a
+	| BufferFloat64Data GLenum A.Float64Array GLenum a
 	| Clear GLbitfield a
 	| ClearColor GLclampf GLclampf GLclampf GLclampf a
 	| CompileShader WebGLShader a
@@ -76,7 +92,7 @@ data WebGLF a
 	| GetUniformLocation WebGLProgram DOMString (Maybe WebGLUniformLocation -> a)
 	| LinkProgram WebGLProgram a
 	| ShaderSource WebGLShader DOMString a
-	| UniformMatrix4fv WebGLUniformLocation GLboolean Float32Array a
+	| UniformMatrix4fv WebGLUniformLocation GLboolean A.Float32Array a
 	| UseProgram WebGLProgram a
 	| VertexAttribPointer AttributeLocation GLint GLenum GLboolean GLsizei GLintptr a
 	| Viewport GLint GLint GLsizei GLsizei a
@@ -84,7 +100,15 @@ data WebGLF a
 instance functorWebGLF :: Functor WebGLF where
 	map f (AttachShader p s x) = AttachShader p s (f x)
 	map f (BindBuffer t b x) = BindBuffer t b (f x)
-	map f (BufferData t s u x) = BufferData t s u (f x)
+	map f (BufferInt8Data t s u x) = BufferInt8Data t s u (f x)
+	map f (BufferInt16Data t s u x) = BufferInt16Data t s u (f x)
+	map f (BufferInt32Data t s u x) = BufferInt32Data t s u (f x)
+	map f (BufferUint8Data t s u x) = BufferUint8Data t s u (f x)
+	map f (BufferUint16Data t s u x) = BufferUint16Data t s u (f x)
+	map f (BufferUint32Data t s u x) = BufferUint32Data t s u (f x)
+	map f (BufferUint8ClampedData t s u x) = BufferUint8ClampedData t s u (f x)
+	map f (BufferFloat32Data t s u x) = BufferFloat32Data t s u (f x)
+	map f (BufferFloat64Data t s u x) = BufferFloat64Data t s u (f x)
 	map f (Clear mask x) = Clear mask (f x)
 	map f (ClearColor r g b a x) = ClearColor r g b a (f x)
 	map f (CompileShader s x) = CompileShader s (f x)
@@ -120,8 +144,32 @@ attachShader p s = liftF $ AttachShader p s unit
 bindBuffer :: GLenum -> WebGLBuffer -> WebGL Unit
 bindBuffer t b = liftF $ BindBuffer t b unit
 
-bufferData :: GLenum -> BufferDataSource -> GLenum -> WebGL Unit
-bufferData t s u = liftF $ BufferData t s u unit
+bufferInt8Data :: GLenum -> A.Int8Array -> GLenum -> WebGL Unit
+bufferInt8Data t s u = liftF $ BufferInt8Data t s u unit
+
+bufferInt16Data :: GLenum -> A.Int16Array -> GLenum -> WebGL Unit
+bufferInt16Data t s u = liftF $ BufferInt16Data t s u unit
+
+bufferInt32Data :: GLenum -> A.Int32Array -> GLenum -> WebGL Unit
+bufferInt32Data t s u = liftF $ BufferInt32Data t s u unit
+
+bufferUint8Data :: GLenum -> A.Uint8Array -> GLenum -> WebGL Unit
+bufferUint8Data t s u = liftF $ BufferUint8Data t s u unit
+
+bufferUint16Data :: GLenum -> A.Uint16Array -> GLenum -> WebGL Unit
+bufferUint16Data t s u = liftF $ BufferUint16Data t s u unit
+
+bufferUint32Data :: GLenum -> A.Uint32Array -> GLenum -> WebGL Unit
+bufferUint32Data t s u = liftF $ BufferUint32Data t s u unit
+
+bufferUint8ClampedData :: GLenum -> A.Uint8ClampedArray -> GLenum -> WebGL Unit
+bufferUint8ClampedData t s u = liftF $ BufferUint8ClampedData t s u unit
+
+bufferFloat32Data :: GLenum -> A.Float32Array -> GLenum -> WebGL Unit
+bufferFloat32Data t s u = liftF $ BufferFloat32Data t s u unit
+
+bufferFloat64Data :: GLenum -> A.Float64Array -> GLenum -> WebGL Unit
+bufferFloat64Data t s u = liftF $ BufferFloat64Data t s u unit
 
 clear :: GLbitfield -> WebGL Unit
 clear mask = liftF $ Clear mask unit
@@ -189,7 +237,7 @@ linkProgram p = liftF $ LinkProgram p unit
 shaderSource :: WebGLShader -> DOMString -> WebGL Unit
 shaderSource sh src = liftF $ ShaderSource sh src unit
 
-uniformMatrix4fv :: WebGLUniformLocation -> GLboolean -> Float32Array -> WebGL Unit
+uniformMatrix4fv :: WebGLUniformLocation -> GLboolean -> A.Float32Array -> WebGL Unit
 uniformMatrix4fv location transpose value = liftF $ UniformMatrix4fv location transpose value unit
 
 useProgram :: WebGLProgram -> WebGL Unit
@@ -208,8 +256,32 @@ interpretWebGL gl (AttachShader p s rest) = do
 interpretWebGL gl (BindBuffer t buffer rest) = do
 	R.bindBuffer gl t buffer
 	return rest
-interpretWebGL gl (BufferData t source usage rest) = do
-	R.bufferData gl t source usage
+interpretWebGL gl (BufferInt8Data t source usage rest) = do
+	R.bufferInt8Data gl t source usage
+	return rest
+interpretWebGL gl (BufferInt16Data t source usage rest) = do
+	R.bufferInt16Data gl t source usage
+	return rest
+interpretWebGL gl (BufferInt32Data t source usage rest) = do
+	R.bufferInt32Data gl t source usage
+	return rest
+interpretWebGL gl (BufferUint8Data t source usage rest) = do
+	R.bufferUint8Data gl t source usage
+	return rest
+interpretWebGL gl (BufferUint16Data t source usage rest) = do
+	R.bufferUint16Data gl t source usage
+	return rest
+interpretWebGL gl (BufferUint32Data t source usage rest) = do
+	R.bufferUint32Data gl t source usage
+	return rest
+interpretWebGL gl (BufferUint8ClampedData t source usage rest) = do
+	R.bufferUint8ClampedData gl t source usage
+	return rest
+interpretWebGL gl (BufferFloat32Data t source usage rest) = do
+	R.bufferFloat32Data gl t source usage
+	return rest
+interpretWebGL gl (BufferFloat64Data t source usage rest) = do
+	R.bufferFloat64Data gl t source usage
 	return rest
 interpretWebGL gl (Clear mask rest) = do
 	R.clear gl mask

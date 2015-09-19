@@ -17,3 +17,15 @@ exports.getDrawingBufferHeight = function(gl) {
 		return gl.drawingBufferHeight;
 	};
 };
+
+exports.bufferData = function(gl) {
+	return function(target) {
+		return function(data) {
+			return function(usage) {
+				return function() {
+					gl.bufferData(target, data, usage);
+				};
+			};
+		};
+	};
+};
