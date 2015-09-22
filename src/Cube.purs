@@ -1,15 +1,17 @@
 module Cube (
+	CubeBuffers(..),
 	initialiseBuffers
 	) where
 
 import Prelude
 import Data.ArrayBuffer.Types (Float32Array(), Uint16Array())
 import Data.Maybe
-import Data.Tuple
 import Data.TypedArray (asFloat32Array, asUint16Array)
 import Graphics.WebGL.Free
 import qualified Graphics.WebGL.Raw.Enums as GL
 import Graphics.WebGL.Raw.Types
+
+type CubeBuffers = {vertex :: WebGLBuffer, index :: WebGLBuffer}
 
 vertices :: Float32Array
 vertices = asFloat32Array [
@@ -68,7 +70,7 @@ vertexIndices = asUint16Array [
 	]
 
 -- TODO: Create buffer will return Nothing if the context is lost
-initialiseBuffers :: WebGL (Tuple WebGLBuffer WebGLBuffer)
+initialiseBuffers :: WebGL CubeBuffers
 initialiseBuffers = do
 	Just cubeVertexBuffer <- createBuffer
 	bindBuffer GL.arrayBuffer cubeVertexBuffer
@@ -78,4 +80,4 @@ initialiseBuffers = do
 	bindBuffer GL.elementArrayBuffer cubeIndexBuffer
 	bufferUint16Data GL.elementArrayBuffer vertexIndices GL.staticDraw
 
-	return $ Tuple cubeVertexBuffer cubeIndexBuffer
+	return {vertex: cubeVertexBuffer, index: cubeIndexBuffer}
