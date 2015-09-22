@@ -28,10 +28,10 @@ fragmentShaderId = D.ElementId "fragment-shader"
 vertexShaderId :: D.ElementId
 vertexShaderId = D.ElementId "vertex-shader"
 
-newtype ProgramLocations = ProgramLocations {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, aVertex :: AttributeLocation}
+type ProgramLocations = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, aVertex :: AttributeLocation}
 
 programLocations :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> ProgramLocations
-programLocations mvMatrix pMatrix aVertex = ProgramLocations {mvMatrix: mvMatrix, pMatrix: pMatrix, aVertex: aVertex}
+programLocations mvMatrix pMatrix aVertex = {mvMatrix: mvMatrix, pMatrix: pMatrix, aVertex: aVertex}
 
 loadShaderSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadShaderSourceFromElement elementId = do
@@ -54,6 +54,6 @@ initialiseShaderProgram gl = do
 				return $ programLocations <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybeAVertexLocation
 			case maybeLocations of
 				Nothing -> throwException $ error "Missing shader program location"
-				Just (ProgramLocations locs) -> do
-					runWebGL gl $ enableVertexAttribArray locs.aVertex
-					return $ Tuple program (ProgramLocations locs)
+				Just locations -> do
+					runWebGL gl $ enableVertexAttribArray locations.aVertex
+					return $ Tuple program locations
