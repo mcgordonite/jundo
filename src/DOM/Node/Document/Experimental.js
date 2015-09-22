@@ -27,6 +27,7 @@ var exitPointerLockFunction = Document.prototype.exitPointerLock || Document.pro
 exports.exitPointerLock = function(doc) {
 	return function() {
 		exitPointerLockFunction.call(doc);
+		return {};
 	};
 };
 
