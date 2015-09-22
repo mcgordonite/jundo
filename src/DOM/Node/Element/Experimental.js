@@ -17,6 +17,7 @@ var fullscreenFunction = Element.prototype.requestFullscreen || Element.prototyp
 exports.requestFullscreen = function(el) {
 	return function() {
 		fullscreenFunction.call(el);
+		return {};
 	};
 };
 
@@ -25,6 +26,7 @@ var pointerLockFunction = Element.prototype.requestPointerLock || Element.ptotot
 exports.requestPointerLock = function(el) {
 	return function() {
 		pointerLockFunction.call(el);
+		return {};
 	};
 };
 
