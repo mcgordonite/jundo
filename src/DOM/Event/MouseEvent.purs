@@ -2,6 +2,7 @@ module DOM.Event.MouseEvent (
 	MouseEventType(),
 	addMouseEventListener,
 	click,
+	mousemove,
 	movementX,
 	movementY
 	) where
