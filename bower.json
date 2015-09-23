@@ -7,6 +7,10 @@
     "purescript",
     "webgl"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mcgordonite/jundo.git"
+  },
   "authors": [
     "Matthew Gordon <mc.gordonite@gmail.com>"
   ],
