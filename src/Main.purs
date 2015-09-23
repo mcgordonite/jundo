@@ -6,6 +6,7 @@ import Shaders
 import Simulation
 import Control.Monad.Eff
 import Control.Monad.Eff.Exception
+import Control.Monad.ST
 import Data.ArrayBuffer.Types (Float32Array())
 import Data.Date (Now(), nowEpochMilliseconds)
 import Data.Time (Milliseconds(..))
@@ -16,13 +17,18 @@ import Data.Matrix
 import Data.Matrix4
 import Data.Vector3 (vec3, j3)
 import Data.Maybe
+import Data.Nullable
 import Data.Tuple
 import Data.TypedArray (asFloat32Array)
 import qualified DOM as D
 import qualified DOM.Event.EventTarget as D
-import qualified DOM.Event.EventTypes (click) as D
 import qualified DOM.Event.Experimental as D
-import qualified DOM.Event.Types as D
+import qualified DOM.Event.MouseEvent as D
+import qualified DOM.Event.Types (MouseEvent()) as D
+import qualified DOM.HTML as D
+import qualified DOM.HTML.Types as D
+import qualified DOM.HTML.Window as D
+import qualified DOM.Node.Document.Experimental as D
 import qualified DOM.Node.Element.Experimental as D
 import qualified DOM.Node.Types as D
 import qualified DOM.RequestAnimationFrame as D
@@ -51,19 +57,25 @@ type CanvasContext = {
 	cubeBuffers :: CubeBuffers
 	}
 
-canvasClick :: forall eff. CanvasElement -> D.Event -> Eff (dom :: D.DOM | eff) Unit
-canvasClick canvas event = do
-	el <- pure $ toElement canvas
-	D.requestFullscreen el
-	D.requestPointerLock el
+canvasClick :: forall eff h. STRef h SimulationState -> D.Element -> D.MouseEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+canvasClick stateRef el _ = do
+	maybeFullscreenEl <- D.window >>= D.document >>= pure <<< D.htmlDocumentToDocument >>= D.fullscreenElement >>= pure <<< toMaybe
+	case maybeFullscreenEl of
+		Nothing -> do	
+			D.requestFullscreen el
+			D.requestPointerLock el
+		-- TODO: Check that the fullscreen element is our canvas
+		Just fullscreenEl -> do
+			modifySTRef stateRef toggleDirection
+			return unit
 
-tick :: forall eff. CanvasContext -> SimulationState -> Milliseconds -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now | eff) Unit
-tick c s time = do
+tick :: forall eff h. CanvasContext -> STRef h SimulationState -> Milliseconds -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now, st :: ST h | eff) Unit
+tick c stateRef time = do
 	h <- D.clientHeight $ toElement c.el
 	w <- D.clientWidth $ toElement c.el
 	setCanvasDimensions {height: toNumber h, width: toNumber w} c.el
 	newTime <- nowEpochMilliseconds
-	newSimulationState <- pure $ timestep (newTime - time) s
+	newSimulationState <- modifySTRef stateRef $ timestep (newTime - time)
 	runWebGL c.gl do
 		bufferHeight <- getDrawingBufferHeight
 		bufferWidth <- getDrawingBufferWidth
@@ -77,12 +89,11 @@ tick c s time = do
 		vertexAttribPointer c.programLocations.aVertex 3 GL.float false 0 0
 		bindBuffer GL.elementArrayBuffer c.cubeBuffers.index
 		drawElements GL.triangles 36 GL.unsignedShort 0
-	D.requestAnimationFrame $ tick c newSimulationState newTime
+	D.requestAnimationFrame $ tick c stateRef newTime
 
 main :: Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION, now :: Now) Unit
 main = do
 	Just el <- getCanvasElementById "easel"
-	D.addEventListener D.click (D.eventListener $ canvasClick el) false (D.elementToEventTarget $ toElement el)
 	gl <- getWebGLContext el
 	Tuple program locations <- initialiseShaderProgram gl
 	cubeBuffers <- runWebGL gl do
@@ -92,4 +103,9 @@ main = do
 		useProgram program
 		initialiseBuffers
 	time <- nowEpochMilliseconds
-	tick {el: el, gl: gl, programLocations: locations, cubeBuffers: cubeBuffers} initialSimulationState time
+	elEventTarget <- pure $ D.elementToEventTarget $ toElement el
+	runST do
+		stateRef <- newSTRef initialSimulationState
+		D.addMouseEventListener D.click (canvasClick stateRef $ toElement el) false elEventTarget
+		tick {el: el, gl: gl, programLocations: locations, cubeBuffers: cubeBuffers} stateRef time
+

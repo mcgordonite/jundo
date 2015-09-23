@@ -18,6 +18,7 @@
 		"purescript-maybe": "~0.3.4",
 		"purescript-nullable": "~0.2.1",
 		"purescript-requestanimationframe": "~1.0.0",
+		"purescript-st": "~0.1.1",
 		"purescript-tuples": "~0.4.0",
 		"purescript-typedarray": "~0.4.6",
 		"purescript-unsafe-coerce": "~0.1.0",
