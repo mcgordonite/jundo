@@ -1,5 +1,7 @@
-bower_components
+bower_components/
 .psci
-.psci_modules
+.psci_modules/
 .idea/
-
+output/
+src/.webpack.js
+*.tix

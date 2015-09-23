@@ -1,12 +1,38 @@
 {
   "name": "jundo",
+  "description": "PureScript and WebGL: what are these things? Let's find out!",
   "private": true,
+  "license": "MIT",
+  "keywords": [
+    "purescript",
+    "webgl"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mcgordonite/jundo.git"
+  },
   "authors": [
     "Matthew Gordon <mc.gordonite@gmail.com>"
   ],
   "devDependencies": {
+    "purescript-arraybuffer-types": "~0.2.0",
+    "purescript-canvas": "~0.3.2",
     "purescript-console": "~0.1.1",
-    "purescript-prelude": "~0.1.2"
+    "purescript-datetime": "~0.9.0",
+    "purescript-dom": "~0.2.6",
+    "purescript-either": "~0.2.2",
+    "purescript-exceptions": "~0.3.0",
+    "purescript-integers": "~0.2.1",
+    "purescript-free": "~0.8.0",
+    "purescript-matrix": "~0.4.4",
+    "purescript-maybe": "~0.3.4",
+    "purescript-nullable": "~0.2.1",
+    "purescript-requestanimationframe": "~1.0.0",
+    "purescript-st": "~0.1.1",
+    "purescript-tuples": "~0.4.0",
+    "purescript-typedarray": "~0.4.6",
+    "purescript-unsafe-coerce": "~0.1.0",
+    "purescript-vector": "~0.2.0",
+    "purescript-webgl-raw": "https://github.com/Jonplussed/purescript-webgl-raw.git#~0.5.0"
   }
 }
-
