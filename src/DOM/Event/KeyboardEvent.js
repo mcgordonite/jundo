@@ -1,20 +1,16 @@
-// module DOM.Event.MouseEvent
+// module DOM.Event.KeyboardEvent
 
-exports.movementX = function(event) {
-	return event.movementX;
+exports.keyCode = function(event) {
+	return event.keyCode;
 };
 
-exports.movementY = function(event) {
-	return event.movementY;
-};
-
-exports.mouseEventListener = function (fn) {
+exports.keyboardEventListener = function (fn) {
 	return function (event) {
 		return fn(event)();
 	};
 };
 
-exports.addMouseEventListenerImpl = function (type) {
+exports.addKeyboardEventListenerImpl = function (type) {
 	return function (listener) {
 		return function (useCapture) {
 			return function (target) {
