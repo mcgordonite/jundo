@@ -1,4 +1,4 @@
--- Linking the CanvasElement to the DOM Element type
+-- | Linking the CanvasElement to the DOM Element type
 module Graphics.Canvas.Element where
 
 import DOM.Node.Types
