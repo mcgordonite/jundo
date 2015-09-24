@@ -1,6 +1,6 @@
 -- | Functions for loading shader source code from script tags and compiling them into a shader program
 module Jundo.Shaders (
-  ProgramLocations(..),
+  ShaderVariables(..),
   initialiseShaderProgram
   ) where
 
@@ -32,10 +32,10 @@ vertexShaderId :: D.ElementId
 vertexShaderId = D.ElementId "vertex-shader"
 
 -- | Type to contain the locations of variables in the compiled shader program
-type ProgramLocations = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, aVertex :: AttributeLocation}
+type ShaderVariables = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, aVertex :: AttributeLocation}
 
-programLocations :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> ProgramLocations
-programLocations mvMatrix pMatrix aVertex = {mvMatrix: mvMatrix, pMatrix: pMatrix, aVertex: aVertex}
+shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> ShaderVariables
+shaderVariables mvMatrix pMatrix aVertex = {mvMatrix: mvMatrix, pMatrix: pMatrix, aVertex: aVertex}
 
 loadShaderSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadShaderSourceFromElement elementId = do
@@ -44,7 +44,7 @@ loadShaderSourceFromElement elementId = do
   D.textContent $ D.elementToNode el
 
 -- | Load and compile the fragment and vertex shader code from script tags, throwing a JavaScript exception if this fails
-initialiseShaderProgram :: forall eff. WebGLContext -> Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION | eff) (Tuple WebGLProgram ProgramLocations)
+initialiseShaderProgram :: forall eff. WebGLContext -> Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION | eff) (Tuple WebGLProgram ShaderVariables)
 initialiseShaderProgram gl = do
   fragmentSource <- loadShaderSourceFromElement fragmentShaderId
   vertexSource <- loadShaderSourceFromElement vertexShaderId
@@ -56,7 +56,7 @@ initialiseShaderProgram gl = do
         maybeMVMatrixLocation <- getUniformLocation program "uMVMatrix"
         maybePMatrixLocation <- getUniformLocation program "uPMatrix"
         maybeAVertexLocation <- getAttribLocation program "aVertexPosition"
-        return $ programLocations <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybeAVertexLocation
+        return $ shaderVariables <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybeAVertexLocation
       case maybeLocations of
         Nothing -> throwException $ error "Missing shader program location"
         Just locations -> do
