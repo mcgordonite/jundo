@@ -2,9 +2,9 @@
 module Main where
 
 import Prelude
-import Cube
-import Shaders
-import Simulation
+import Jundo.Cube
+import Jundo.Shaders
+import Jundo.Simulation
 import Control.Monad.Eff
 import Control.Monad.Eff.Exception
 import Control.Monad.ST

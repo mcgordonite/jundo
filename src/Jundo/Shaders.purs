@@ -1,5 +1,5 @@
 -- | Functions for loading shader source code from script tags and compiling them into a shader program
-module Shaders (
+module Jundo.Shaders (
   ProgramLocations(..),
   initialiseShaderProgram
   ) where

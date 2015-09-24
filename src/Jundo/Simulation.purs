@@ -1,5 +1,5 @@
 -- | Pure functions and types representing the (pretty simple) state of the simulation
-module Simulation (
+module Jundo.Simulation (
   RotationDirection(..),
   SimulationState(..),
   initialSimulationState,

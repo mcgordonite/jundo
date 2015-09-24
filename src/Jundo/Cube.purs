@@ -1,5 +1,5 @@
 -- | Logic for creating a cube in WebGL
-module Cube (
+module Jundo.Cube (
   CubeBuffers(..),
   initialiseBuffers
   ) where
