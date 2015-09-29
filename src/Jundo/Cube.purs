@@ -9,7 +9,6 @@ import Data.ArrayBuffer.Types (Float32Array(), Uint16Array())
 import Data.Maybe
 import Data.TypedArray (asFloat32Array, asUint16Array)
 import Graphics.WebGL.Free
-import qualified Graphics.WebGL.Raw.Enums as GL
 import Graphics.WebGL.Raw.Types
 
 type CubeBuffers = {vertex :: WebGLBuffer, index :: WebGLBuffer}
@@ -77,6 +76,6 @@ initialiseBuffers program = do
   Just cubeVertexBuffer <- createBuffer
   Just cubeIndexBuffer <- createBuffer
   programOperation program do
-    arrayBufferOperation cubeVertexBuffer $ bufferFloat32Data GL.arrayBuffer vertices GL.staticDraw
-    elementArrayBufferOperation cubeIndexBuffer $ bufferUint16Data GL.elementArrayBuffer vertexIndices GL.staticDraw
+    arrayBufferOperation cubeVertexBuffer $ bufferFloat32Data vertices staticDraw
+    elementArrayBufferOperation cubeIndexBuffer $ bufferUint16Data vertexIndices staticDraw
   return {vertex: cubeVertexBuffer, index: cubeIndexBuffer}

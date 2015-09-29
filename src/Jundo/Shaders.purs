@@ -21,7 +21,6 @@ import qualified DOM.HTML.Window as D
 import Graphics.Canvas (Canvas())
 import Graphics.WebGL.Free
 import Graphics.WebGL.Free.Shaders (compileAndLinkProgram)
-import Graphics.WebGL.Raw.Types
 
 -- | Where we keep the fragment shader code
 fragmentShaderId :: D.ElementId

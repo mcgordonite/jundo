@@ -24,7 +24,6 @@ import qualified DOM.Node.Element.Experimental as D
 import qualified DOM.Node.Types as D
 import Graphics.WebGL.Context
 import Graphics.WebGL.Free
-import qualified Graphics.WebGL.Raw.Enums as GL
 import Graphics.WebGL.Raw.Types
 import Graphics.Canvas (Canvas(), CanvasElement(), setCanvasDimensions)
 import Math.Radians
@@ -59,8 +58,8 @@ initialiseWebGL el canvas = do
   Tuple program shaderVariables <- initialiseShaderProgram gl
   cubeBuffers <- runWebGL gl do
     clearColor 0.0 0.0 0.0 1.0
-    enable GL.depthTest
-    depthFunc GL.lequal
+    enable depthTest
+    depthFunc lequal
     initialiseBuffers program
   return $ RenderingContext {gl: gl, canvas: canvas, el: el, shaderVariables: shaderVariables, cubeBuffers: cubeBuffers, program: program}
 
@@ -79,12 +78,12 @@ render (RenderingContext ctx) state = do
     viewport 0 0 bufferWidth bufferHeight
 
     -- Clear the canvas
-    clear $ GL.colorBufferBit .|. GL.depthBufferBit
+    clear $ colorBufferBit .|. depthBufferBit
 
     -- Draw the cube!
     programOperation ctx.program do
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
       uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix state.angle
-      arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.aVertex 3 GL.float false 0 0
-      elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements GL.triangles 36 GL.unsignedShort 0
+      arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.aVertex 3 false 0 0
+      elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements triangles 36 0
   return unit
