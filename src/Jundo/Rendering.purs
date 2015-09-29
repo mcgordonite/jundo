@@ -47,6 +47,7 @@ newtype RenderingContext = RenderingContext {
   canvas :: CanvasElement,
   el :: D.Element,
   gl :: WebGLContext,
+  program :: WebGLProgram,
   shaderVariables :: ShaderVariables,
   cubeBuffers :: CubeBuffers
   }
@@ -60,9 +61,8 @@ initialiseWebGL el canvas = do
     clearColor 0.0 0.0 0.0 1.0
     enable GL.depthTest
     depthFunc GL.lequal
-    useProgram program
-    initialiseBuffers
-  return $ RenderingContext {gl: gl, canvas: canvas, el: el, shaderVariables: shaderVariables, cubeBuffers: cubeBuffers}
+    initialiseBuffers program
+  return $ RenderingContext {gl: gl, canvas: canvas, el: el, shaderVariables: shaderVariables, cubeBuffers: cubeBuffers, program: program}
 
 -- | Render the simulation state to the canvas
 render :: forall eff. RenderingContext -> SimulationState -> Eff (canvas :: Canvas, dom :: D.DOM | eff) Unit
@@ -82,10 +82,9 @@ render (RenderingContext ctx) state = do
     clear $ GL.colorBufferBit .|. GL.depthBufferBit
 
     -- Draw the cube!
-    uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
-    uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix state.angle
-    bindBuffer GL.arrayBuffer ctx.cubeBuffers.vertex
-    vertexAttribPointer ctx.shaderVariables.aVertex 3 GL.float false 0 0
-    bindBuffer GL.elementArrayBuffer ctx.cubeBuffers.index
-    drawElements GL.triangles 36 GL.unsignedShort 0
+    programOperation ctx.program do
+      uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
+      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix state.angle
+      arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.aVertex 3 GL.float false 0 0
+      elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements GL.triangles 36 GL.unsignedShort 0
   return unit

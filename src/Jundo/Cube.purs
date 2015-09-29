@@ -72,14 +72,11 @@ vertexIndices = asUint16Array [
 
 -- TODO: Create buffer will return Nothing if the context is lost
 -- | Create and populate the WebGL buffers required to render a plain old cube
-initialiseBuffers :: WebGL CubeBuffers
-initialiseBuffers = do
+initialiseBuffers :: WebGLProgram -> WebGL CubeBuffers
+initialiseBuffers program = do
   Just cubeVertexBuffer <- createBuffer
-  bindBuffer GL.arrayBuffer cubeVertexBuffer
-  bufferFloat32Data GL.arrayBuffer vertices GL.staticDraw
-
   Just cubeIndexBuffer <- createBuffer
-  bindBuffer GL.elementArrayBuffer cubeIndexBuffer
-  bufferUint16Data GL.elementArrayBuffer vertexIndices GL.staticDraw
-
+  programOperation program do
+    arrayBufferOperation cubeVertexBuffer $ bufferFloat32Data GL.arrayBuffer vertices GL.staticDraw
+    elementArrayBufferOperation cubeIndexBuffer $ bufferUint16Data GL.elementArrayBuffer vertexIndices GL.staticDraw
   return {vertex: cubeVertexBuffer, index: cubeIndexBuffer}

@@ -60,5 +60,5 @@ initialiseShaderProgram gl = do
       case maybeLocations of
         Nothing -> throwException $ error "Missing shader program location"
         Just locations -> do
-          runWebGL gl $ enableVertexAttribArray locations.aVertex
+          runWebGL gl $ programOperation program $ enableVertexAttribArray locations.aVertex
           return $ Tuple program locations
