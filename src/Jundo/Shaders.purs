@@ -31,10 +31,10 @@ vertexShaderId :: D.ElementId
 vertexShaderId = D.ElementId "vertex-shader"
 
 -- | Type to contain the locations of variables in the compiled shader program
-type ShaderVariables = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, aVertex :: AttributeLocation}
+type ShaderVariables = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, position :: AttributeLocation, colour :: AttributeLocation}
 
-shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> ShaderVariables
-shaderVariables mvMatrix pMatrix aVertex = {mvMatrix: mvMatrix, pMatrix: pMatrix, aVertex: aVertex}
+shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> AttributeLocation -> ShaderVariables
+shaderVariables mvMatrix pMatrix position colour = {mvMatrix: mvMatrix, pMatrix: pMatrix, position: position, colour: colour}
 
 loadShaderSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadShaderSourceFromElement elementId = do
@@ -52,12 +52,15 @@ initialiseShaderProgram gl = do
     Left err -> throwException $ error err
     Right program -> do
       maybeLocations <- runWebGL gl do
-        maybeMVMatrixLocation <- getUniformLocation program "uMVMatrix"
-        maybePMatrixLocation <- getUniformLocation program "uPMatrix"
-        maybeAVertexLocation <- getAttribLocation program "aVertexPosition"
-        return $ shaderVariables <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybeAVertexLocation
+        maybeMVMatrixLocation <- getUniformLocation program "mvMatrix"
+        maybePMatrixLocation <- getUniformLocation program "pMatrix"
+        maybePositionLocation <- getAttribLocation program "vertexPosition"
+        maybeColourLocation <- getAttribLocation program "vertexColour"
+        return $ shaderVariables <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybePositionLocation <*> maybeColourLocation
       case maybeLocations of
         Nothing -> throwException $ error "Missing shader program location"
         Just locations -> do
-          runWebGL gl $ programOperation program $ enableVertexAttribArray locations.aVertex
+          runWebGL gl $ programOperation program do
+            enableVertexAttribArray locations.position
+            enableVertexAttribArray locations.colour
           return $ Tuple program locations

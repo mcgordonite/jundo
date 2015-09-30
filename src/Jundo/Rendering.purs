@@ -84,6 +84,7 @@ render (RenderingContext ctx) state = do
     programOperation ctx.program do
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
       uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix state.angle
-      arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.aVertex 3 false 0 0
+      arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.position 3 false 0 0
+      arrayBufferOperation ctx.cubeBuffers.colour $ vertexAttribPointer ctx.shaderVariables.colour 3 false 0 0
       elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements triangles 36 0
   return unit

@@ -11,7 +11,7 @@ import Data.TypedArray (asFloat32Array, asUint16Array)
 import Graphics.WebGL.Free
 import Graphics.WebGL.Raw.Types
 
-type CubeBuffers = {vertex :: WebGLBuffer, index :: WebGLBuffer}
+type CubeBuffers = {vertex :: WebGLBuffer, index :: WebGLBuffer, colour :: WebGLBuffer}
 
 vertices :: Float32Array
 vertices = asFloat32Array [
@@ -47,6 +47,40 @@ vertices = asFloat32Array [
   -1.0, 1.0, -1.0
   ]
 
+vertexColours :: Float32Array
+vertexColours = asFloat32Array [
+  -- Front face
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  -- Back face
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  -- Top face
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  -- Bottom face
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  -- Right face
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  -- Left face
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0
+  ]
+
 vertexIndices :: Uint16Array
 vertexIndices = asUint16Array [
   -- Front face
@@ -75,7 +109,10 @@ initialiseBuffers :: WebGLProgram -> WebGL CubeBuffers
 initialiseBuffers program = do
   Just cubeVertexBuffer <- createBuffer
   Just cubeIndexBuffer <- createBuffer
+  Just cubeColourBuffer <- createBuffer
   programOperation program do
     arrayBufferOperation cubeVertexBuffer $ bufferFloat32Data vertices staticDraw
+    arrayBufferOperation cubeColourBuffer $ bufferFloat32Data vertexColours staticDraw
     elementArrayBufferOperation cubeIndexBuffer $ bufferUint16Data vertexIndices staticDraw
-  return {vertex: cubeVertexBuffer, index: cubeIndexBuffer}
+  return {vertex: cubeVertexBuffer, index: cubeIndexBuffer, colour: cubeColourBuffer}
+

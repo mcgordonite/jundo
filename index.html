@@ -3,17 +3,26 @@
 <head>
 	<title>Jundo</title>
 	<script id="fragment-shader" type="x-shader/x-fragment">
+		precision mediump float;
+
+		varying vec4 colour;
+
 		void main(void) {
-			gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+			gl_FragColor = colour;
 		}
 	</script>
 	<script id="vertex-shader" type="x-shader/x-vertex">
-		attribute vec3 aVertexPosition;
-		uniform mat4 uMVMatrix;
-		uniform mat4 uPMatrix;
+		attribute vec3 vertexPosition;
+		attribute vec3 vertexColour;
+
+		varying vec4 colour;
+
+		uniform mat4 mvMatrix;
+		uniform mat4 pMatrix;
 
 		void main(void) {
-			gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+			colour = vec4(vertexColour, 1.0);
+			gl_Position = pMatrix * mvMatrix * vec4(vertexPosition, 1.0);
 		}
 	</script>
 	<script defer src="app.js"></script>
