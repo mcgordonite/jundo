@@ -31,10 +31,10 @@ vertexShaderId :: D.ElementId
 vertexShaderId = D.ElementId "vertex-shader"
 
 -- | Type to contain the locations of variables in the compiled shader program
-type ShaderVariables = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, position :: AttributeLocation, colour :: AttributeLocation}
+type ShaderVariables = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, position :: AttributeLocation, colour :: AttributeLocation, normal :: AttributeLocation}
 
-shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> AttributeLocation -> ShaderVariables
-shaderVariables mvMatrix pMatrix position colour = {mvMatrix: mvMatrix, pMatrix: pMatrix, position: position, colour: colour}
+shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> AttributeLocation -> AttributeLocation -> ShaderVariables
+shaderVariables mvMatrix pMatrix position colour normal = {mvMatrix: mvMatrix, pMatrix: pMatrix, position: position, colour: colour, normal: normal}
 
 loadShaderSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadShaderSourceFromElement elementId = do
@@ -51,16 +51,18 @@ initialiseShaderProgram gl = do
   case eitherProgram of
     Left err -> throwException $ error err
     Right program -> do
-      maybeLocations <- runWebGL gl do
+      maybeVariables <- runWebGL gl do
         maybeMVMatrixLocation <- getUniformLocation program "mvMatrix"
         maybePMatrixLocation <- getUniformLocation program "pMatrix"
         maybePositionLocation <- getAttribLocation program "vertexPosition"
         maybeColourLocation <- getAttribLocation program "vertexColour"
-        return $ shaderVariables <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybePositionLocation <*> maybeColourLocation
-      case maybeLocations of
+        maybeNormalLocation <- getAttribLocation program "vertexNormal"
+        return $ shaderVariables <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybePositionLocation <*> maybeColourLocation <*> maybeNormalLocation
+      case maybeVariables of
         Nothing -> throwException $ error "Missing shader program location"
-        Just locations -> do
+        Just variables -> do
           runWebGL gl $ programOperation program do
-            enableVertexAttribArray locations.position
-            enableVertexAttribArray locations.colour
-          return $ Tuple program locations
+            enableVertexAttribArray variables.position
+            enableVertexAttribArray variables.colour
+            enableVertexAttribArray variables.normal
+          return $ Tuple program variables
