@@ -60,18 +60,17 @@ cameraUnitVelocity {w: true, a: false, d: false, s: false} = scale (-1.0) k3
 cameraUnitVelocity {w: false, a: false, d: false, s: true} = k3
 cameraUnitVelocity {w: false, a: true, d: false, s: false} = scale (-1.0) i3
 cameraUnitVelocity {w: false, a: false, d: true, s: false} = i3
-cameraUnitVelocity {w: true, a: true, d: false, s: false} = vec3 (-sqrt2) 0.0 (-sqrt2)
-cameraUnitVelocity {w: true, a: false, d: true, s: false} = vec3 sqrt2 0.0 (-sqrt2)
-cameraUnitVelocity {w: false, a: true, d: false, s: true} = vec3 (-sqrt2) 0.0 (sqrt2)
-cameraUnitVelocity {w: false, a: false, d: true, s: true} = vec3 sqrt2 0.0 (sqrt2)
+cameraUnitVelocity {w: true, a: true, d: false, s: false} = vec3 (-sqrt1_2) 0.0 (-sqrt1_2)
+cameraUnitVelocity {w: true, a: false, d: true, s: false} = vec3 sqrt1_2 0.0 (-sqrt1_2)
+cameraUnitVelocity {w: false, a: true, d: false, s: true} = vec3 (-sqrt1_2) 0.0 sqrt1_2
+cameraUnitVelocity {w: false, a: false, d: true, s: true} = vec3 sqrt1_2 0.0 sqrt1_2
 cameraUnitVelocity _ = vec3 0.0 0.0 0.0
 
 -- | Update the simulation state to reflect a change in simulation time, applying camera and cube movement
 timestep :: Milliseconds -> KeyboardState -> SimulationState -> SimulationState
 timestep step ks {cube: cube, camera: camera} = {
   cube: {direction: cube.direction, position: cube.position, angle: cube.angle + angleChange cube.direction},
-  -- TODO: Apply pitch and movement rate
-  camera: {pitch: camera.pitch, yaw: camera.yaw, position: vAdd camera.position $ rotateVec3 j3 camera.yaw (cameraUnitVelocity ks)}
+  camera: {pitch: camera.pitch, yaw: camera.yaw, position: vAdd camera.position positionChange}
   }
   where
   stepSeconds = toSeconds step
@@ -79,6 +78,7 @@ timestep step ks {cube: cube, camera: camera} = {
   directionMultiplier direction = case direction of
     Anticlockwise -> 1.0
     Clockwise -> -1.0
+  positionChange = scale movementRate $ rotateVec3 j3 camera.yaw (cameraUnitVelocity ks)
 
 -- | Make the cube spin the other way! Excitement.
 toggleDirection :: SimulationState -> SimulationState
