@@ -26,7 +26,7 @@ import Graphics.WebGL.Context
 import Graphics.WebGL.Free
 import Graphics.WebGL.Raw.Types
 import Graphics.Canvas (Canvas(), CanvasElement(), setCanvasDimensions)
-import Math.Radians
+import Math.Angles
 
 -- | The matrix library is based on plain JavaScript arrays. Extract the backing array from the matrix and convert
 -- | it to a typed array so we can use it with WebGL.
@@ -35,7 +35,7 @@ matrixToFloat32Array = asFloat32Array <<< toArray
 
 -- | Get the transformation matrix for the cube's vertices based on it's current angle
 mvMatrix :: Radians -> Float32Array
-mvMatrix (Radians angle) = matrixToFloat32Array $ rotate angle j3 $ translate (vec3 0.0 0.0 (-6.0)) identity
+mvMatrix angle = matrixToFloat32Array $ rotate angle j3 $ translate (vec3 0.0 0.0 (-6.0)) identity
 
 -- | Get a perspective matrix as a typed array for the given buffer dimensions
 perspectiveMatrix :: Int -> Int -> Float32Array
