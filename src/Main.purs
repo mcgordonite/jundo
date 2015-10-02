@@ -31,6 +31,14 @@ import Graphics.Canvas.Element
 -- | Type for tracking which keys are currently depressed
 type KeyboardState = {w :: Boolean, a :: Boolean, s :: Boolean, d :: Boolean}
 
+-- | Update the state of the key with the given key code if it is one we are tracking 
+updateKey :: Int -> Boolean -> KeyboardState -> KeyboardState
+updateKey code isDown ks | code == D.wKeyCode = {w: isDown, a: ks.a, d: ks.d, s: ks.s}
+updateKey code isDown ks | code == D.aKeyCode = {w: ks.w, a: isDown, d: ks.d, s: ks.s}
+updateKey code isDown ks | code == D.dKeyCode = {w: ks.w, a: ks.a, d: isDown, s: ks.s}
+updateKey code isDown ks | code == D.sKeyCode = {w: ks.w, a: ks.a, d: ks.d, s: isDown}
+updateKey _ _ = id
+
 -- Type for passing application state between event listeners and the render loop
 type AppState = {keyboard :: KeyboardState, simulation :: SimulationState}
 
@@ -46,36 +54,16 @@ canvasMousemove stateRef e = do
   return unit
 
 -- | Monitor canvas keydown events so we can track which keys are depressed
-canvasKeyDown :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
-canvasKeyDown stateRef e | D.keyCode e == D.wKeyCode = do
-  modifySTRef stateRef $ modifyKeyboardState \ks -> {w: true, a : ks.a, d: ks.d, s: ks.s}
+canvasKeydown :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+canvasKeydown stateRef e = do
+  modifySTRef stateRef $ modifyKeyboardState $ updateKey D.keyCode true
   return unit
-canvasKeyDown stateRef e | D.keyCode e == D.aKeyCode = do
-  modifySTRef stateRef $ modifyKeyboardState \ks -> {w: ks.w, a : true, d: ks.d, s: ks.s}
-  return unit
-canvasKeyDown stateRef e | D.keyCode e == D.dKeyCode = do
-  modifySTRef stateRef $ modifyKeyboardState \ks -> {w: ks.w, a : ks.a, d: true, s: ks.s}
-  return unit
-canvasKeyDown stateRef e | D.keyCode e == D.sKeyCode = do
-  modifySTRef stateRef $ modifyKeyboardState \ks -> {w: ks.w, a : ks.a, d: ks.d, s: true}
-  return unit
-canvasKeyDown stateRef _ = return unit
 
 -- | Monitor canvas keyup events so we can track which keys are depressed
-canvasKeyUp :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
-canvasKeyUp stateRef e | D.keyCode e == D.wKeyCode = do
-  modifySTRef stateRef $ modifyKeyboardState \ks -> {w: false, a : ks.a, d: ks.d, s: ks.s}
+canvasKeyup :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+canvasKeyup stateRef e = do
+  modifySTRef stateRef $ modifyKeyboardState $ updateKey D.keyCode false
   return unit
-canvasKeyUp stateRef e | D.keyCode e == D.aKeyCode = do
-  modifySTRef stateRef $ modifyKeyboardState \ks -> {w: ks.w, a : false, d: ks.d, s: ks.s}
-  return unit
-canvasKeyUp stateRef e | D.keyCode e == D.dKeyCode = do
-  modifySTRef stateRef $ modifyKeyboardState \ks -> {w: ks.w, a : ks.a, d: false, s: ks.s}
-  return unit
-canvasKeyUp stateRef e | D.keyCode e == D.sKeyCode = do
-  modifySTRef stateRef $ modifyKeyboardState \ks -> {w: ks.w, a : ks.a, d: ks.d, s: false}
-  return unit
-canvasKeyUp stateRef _ = return unit
 
 -- | Handle canvas clicks. If we are not in full screen, open the canvas in full screen.
 -- | Otherwise, toggle the direction of the cube's rotation.
@@ -112,6 +100,8 @@ main = do
   -- The event listeners need to update the state read by the render loop somehow, so let's use a mutable reference cell
   runST do
     stateRef <- newSTRef {simulation: initialSimulationState, keyboard: {w: false, a: false, s: false, d: false}}
+    keydownEventListener <- pure $ D.keyboardEventListener (canvasKeydown stateRef)
+    keyupEventListener <- pure $ D.keyboardEventListener (canvasKeyup stateRef)
     mousemoveEventListener <- pure $ D.mouseEventListener (canvasMousemove stateRef)
     clickEventListener <- pure $ D.mouseEventListener (canvasClick stateRef el)
     D.addMouseEventListener D.click clickEventListener false elEventTarget
