@@ -62,5 +62,5 @@ main = do
   -- The event listener needs to update the state read by the render loop somehow, so let's use a mutable reference cell
   runST do
     stateRef <- newSTRef initialSimulationState
-    D.addMouseEventListener D.click (canvasClick stateRef el) false elEventTarget
+    D.addMouseEventListener D.click (D.mouseEventListener $ canvasClick stateRef el) false elEventTarget
     tick renderingContext stateRef time
