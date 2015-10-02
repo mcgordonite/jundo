@@ -70,18 +70,6 @@ canvasMousemove stateRef e = do
   movement <- pure $ Tuple (D.movementX e) (D.movementY e)
   return unit
 
--- | Monitor canvas keydown events so we can track which keys are depressed
-canvasKeydown :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
-canvasKeydown stateRef e = do
-  modifySTRef stateRef $ modifyKeyboardState $ updateKey (D.keyCode e) true
-  return unit
-
--- | Monitor canvas keyup events so we can track which keys are depressed
-canvasKeyup :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
-canvasKeyup stateRef e = do
-  modifySTRef stateRef $ modifyKeyboardState $ updateKey (D.keyCode e) false
-  return unit
-
 -- | Handle canvas clicks. If we are not in full screen, open the canvas in full screen.
 -- | Otherwise, toggle the direction of the cube's rotation.
 canvasClick :: forall eff h. STRef h AppState -> D.Element -> D.MouseEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
@@ -95,19 +83,31 @@ canvasClick stateRef el _ = do
       D.requestFullscreen el
       D.requestPointerLock el
 
+-- | Monitor document keydown events so we can track which keys are depressed
+documentKeydown :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+documentKeydown stateRef e = do
+  modifySTRef stateRef $ modifyKeyboardState $ updateKey (D.keyCode e) true
+  return unit
+
+-- | Monitor document keyup events so we can track which keys are depressed
+documentKeyup :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+documentKeyup stateRef e = do
+  modifySTRef stateRef $ modifyKeyboardState $ updateKey (D.keyCode e) false
+  return unit
+
 -- | Add keyboard and mouse move event listeners when we enter full screen, and remove them when we leave it
 documentFullscreenChange :: forall eff. D.KeyboardEventListener (dom :: D.DOM | eff) -> D.KeyboardEventListener (dom :: D.DOM | eff)
-  -> D.MouseEventListener (dom :: D.DOM | eff) -> D.EventTarget -> D.Event -> Eff (dom :: D.DOM | eff) Unit
-documentFullscreenChange keyupListener keydownListener moveListener targetCanvas _ = do
+  -> D.MouseEventListener (dom :: D.DOM | eff) -> D.EventTarget -> D.EventTarget -> D.Event -> Eff (dom :: D.DOM | eff) Unit
+documentFullscreenChange keyupListener keydownListener moveListener targetCanvas targetDocument _ = do
   fullScreen <- inFullscreen
   if fullScreen
     then do
-      D.addKeyboardEventListener D.keyup keyupListener false targetCanvas
-      D.addKeyboardEventListener D.keydown keydownListener false targetCanvas
+      D.addKeyboardEventListener D.keyup keyupListener false targetDocument
+      D.addKeyboardEventListener D.keydown keydownListener false targetDocument
       D.addMouseEventListener D.mousemove moveListener false targetCanvas
     else do
-      D.removeKeyboardEventListener D.keyup keyupListener false targetCanvas
-      D.removeKeyboardEventListener D.keydown keydownListener false targetCanvas
+      D.removeKeyboardEventListener D.keyup keyupListener false targetDocument
+      D.removeKeyboardEventListener D.keydown keydownListener false targetDocument
       D.removeMouseEventListener D.mousemove moveListener false targetCanvas
 
 -- | Main loop. Steps the simulation state forwards in time then renders the new state.
@@ -126,6 +126,7 @@ main = do
   renderingContext <- initialiseWebGL el canvas
   time <- nowEpochMilliseconds
   elEventTarget <- pure $ D.elementToEventTarget el
+  documentEventTarget <- globalDocument >>= pure <<< D.documentToEventTarget
 
   -- Aaa mutable state!
   -- The event listeners need to update the state read by the render loop somehow, so let's use a mutable reference cell
@@ -133,13 +134,12 @@ main = do
     stateRef <- newSTRef {simulation: initialSimulationState, keyboard: {w: false, a: false, s: false, d: false}}
 
     -- Event listeners added and removed when we enter and leave full screen
-    keyupListener <- pure $ D.keyboardEventListener (canvasKeyup stateRef)
-    keydownListener <- pure $ D.keyboardEventListener (canvasKeydown stateRef)
+    keyupListener <- pure $ D.keyboardEventListener (documentKeyup stateRef)
+    keydownListener <- pure $ D.keyboardEventListener (documentKeydown stateRef)
     moveListener <- pure $ D.mouseEventListener (canvasMousemove stateRef)
 
     -- Listener for pointer lock and full screen change events
-    fullscreenListener <- pure $ D.eventListener (documentFullscreenChange keyupListener keydownListener moveListener elEventTarget)
-    documentEventTarget <- globalDocument >>= pure <<< D.documentToEventTarget
+    fullscreenListener <- pure $ D.eventListener (documentFullscreenChange keyupListener keydownListener moveListener elEventTarget documentEventTarget)
     D.addEventListener D.fullscreenChange fullscreenListener false documentEventTarget
     D.addEventListener D.pointerLockChange fullscreenListener false documentEventTarget
 
