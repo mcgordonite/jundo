@@ -1,7 +1,7 @@
 -- | Pure functions and types representing the (pretty simple) state of the simulation
 module Jundo.Simulation (
   RotationDirection(..),
-  SimulationState(..),
+  SimulationState(),
   initialSimulationState,
   timestep,
   toggleDirection
@@ -15,10 +15,10 @@ newtype RadiansPerSecond = RadiansPerSecond Number
 data RotationDirection = Clockwise | Anticlockwise
 
 -- | Type representing the state of the simulation: what angle the cube is at and in what direction it is rotating 
-type SimulationState = {direction :: RotationDirection, angle :: Radians}
+newtype SimulationState = SimulationState {direction :: RotationDirection, angle :: Radians}
 
 initialSimulationState :: SimulationState
-initialSimulationState = {direction: Anticlockwise, angle: Radians 0.0}
+initialSimulationState = SimulationState {direction: Anticlockwise, angle: Radians 0.0}
 
 angularSpeed :: RadiansPerSecond
 angularSpeed = RadiansPerSecond 1.0
@@ -29,7 +29,7 @@ angleFromVelocity (RadiansPerSecond v) (Seconds t) = Radians (v * t)
 
 -- | Update the simulation state to reflect a change in simulation time
 timestep :: Milliseconds -> SimulationState -> SimulationState
-timestep step {direction: direction, angle: angle} = {direction: direction, angle: angle + angleChange}
+timestep step (SimulationState {direction: direction, angle: angle}) = SimulationState {direction: direction, angle: angle + angleChange}
   where
   angleChange :: Radians
   angleChange = Radians directionMultiplier * angleFromVelocity angularSpeed (toSeconds step)
@@ -40,7 +40,7 @@ timestep step {direction: direction, angle: angle} = {direction: direction, angl
 
 -- | Make the cube spin the other way! Excitement.
 toggleDirection :: SimulationState -> SimulationState
-toggleDirection {direction: direction, angle: a} = {direction: newDirection, angle: a}
+toggleDirection (SimulationState {direction: direction, angle: a}) = SimulationState {direction: newDirection, angle: a}
   where
   newDirection = case direction of
     Clockwise -> Anticlockwise
