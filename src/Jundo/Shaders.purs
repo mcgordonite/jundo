@@ -31,10 +31,31 @@ vertexShaderId :: D.ElementId
 vertexShaderId = D.ElementId "vertex-shader"
 
 -- | Type to contain the locations of variables in the compiled shader program
-type ShaderVariables = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, position :: AttributeLocation, colour :: AttributeLocation, normal :: AttributeLocation}
+type ShaderVariables = {
+  ambientColour :: WebGLUniformLocation,
+  directionalColour :: WebGLUniformLocation,
+  lightingDirection :: WebGLUniformLocation,
+  mvMatrix :: WebGLUniformLocation,
+  pMatrix :: WebGLUniformLocation,
+  nMatrix :: WebGLUniformLocation,
+  position :: AttributeLocation,
+  colour :: AttributeLocation,
+  normal :: AttributeLocation
+  }
 
-shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> AttributeLocation -> AttributeLocation -> ShaderVariables
-shaderVariables mvMatrix pMatrix position colour normal = {mvMatrix: mvMatrix, pMatrix: pMatrix, position: position, colour: colour, normal: normal}
+shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation
+  -> WebGLUniformLocation -> AttributeLocation -> AttributeLocation -> AttributeLocation -> ShaderVariables
+shaderVariables mvMatrix pMatrix nMatrix ambientColour directionalColour lightingDirection position colour normal = {
+  ambientColour: ambientColour,
+  directionalColour: directionalColour,
+  lightingDirection: lightingDirection,
+  mvMatrix: mvMatrix,
+  pMatrix: pMatrix,
+  nMatrix: nMatrix,
+  position: position,
+  colour: colour,
+  normal: normal
+  }
 
 loadShaderSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadShaderSourceFromElement elementId = do
@@ -54,10 +75,23 @@ initialiseShaderProgram gl = do
       maybeVariables <- runWebGL gl do
         maybeMVMatrixLocation <- getUniformLocation program "mvMatrix"
         maybePMatrixLocation <- getUniformLocation program "pMatrix"
+        maybeNMatrixLocation <- getUniformLocation program "nMatrix"
+        maybeAmbientColourLocation <- getUniformLocation program "ambientColour"
+        maybeDirectionalColourLocation <- getUniformLocation program "directionalColour"
+        maybeLightingDirectionLocation <- getUniformLocation program "lightingDirection"
         maybePositionLocation <- getAttribLocation program "vertexPosition"
         maybeColourLocation <- getAttribLocation program "vertexColour"
         maybeNormalLocation <- getAttribLocation program "vertexNormal"
-        return $ shaderVariables <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybePositionLocation <*> maybeColourLocation <*> maybeNormalLocation
+        return $ shaderVariables
+          <$> maybeMVMatrixLocation
+          <*> maybePMatrixLocation
+          <*> maybeNMatrixLocation
+          <*> maybeAmbientColourLocation
+          <*> maybeDirectionalColourLocation
+          <*> maybeLightingDirectionLocation
+          <*> maybePositionLocation
+          <*> maybeColourLocation
+          <*> maybeNormalLocation
       case maybeVariables of
         Nothing -> throwException $ error "Missing shader program location"
         Just variables -> do

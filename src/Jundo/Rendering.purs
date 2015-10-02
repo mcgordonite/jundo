@@ -28,6 +28,18 @@ import Graphics.WebGL.Raw.Types
 import Graphics.Canvas (Canvas(), CanvasElement(), setCanvasDimensions)
 import Math.Radians
 
+-- | Hard coded RGB colour of the ambient lighting
+ambientColour :: Float32Array
+ambientColour = asFloat32Array [0.9, 0.85, 0.80]
+
+-- | Hard coded RGB colour of the directional lighting
+directionalColour :: Float32Array
+directionalColour = asFloat32Array [0.80, 0.85, 0.95]
+
+-- | Hard coded normalised direction of the directional lighting
+lightingDirection :: Float32Array
+lightingDirection = asFloat32Array [-0.5, -0.5, 0.707107]
+
 -- | The matrix library is based on plain JavaScript arrays. Extract the backing array from the matrix and convert
 -- | it to a typed array so we can use it with WebGL.
 matrixToFloat32Array :: Mat4 -> Float32Array
@@ -82,8 +94,15 @@ render (RenderingContext ctx) state = do
 
     -- Draw the cube!
     programOperation ctx.program do
+      uniform3fv ctx.shaderVariables.ambientColour ambientColour
+      uniform3fv ctx.shaderVariables.directionalColour directionalColour
+      uniform3fv ctx.shaderVariables.lightingDirection lightingDirection
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
       uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix state.angle
+
+      -- TODO: Calculate vertex normal transformation matrix
+      uniformMatrix4fv ctx.shaderVariables.nMatrix false $ mvMatrix state.angle
+
       arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.position 3 false 0 0
       arrayBufferOperation ctx.cubeBuffers.colour $ vertexAttribPointer ctx.shaderVariables.colour 3 false 0 0
       arrayBufferOperation ctx.cubeBuffers.colour $ vertexAttribPointer ctx.shaderVariables.normal 3 false 0 0
