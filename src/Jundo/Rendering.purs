@@ -9,6 +9,7 @@ import Prelude
 import Jundo.Cube
 import Jundo.Shaders
 import Jundo.Simulation
+import Jundo.Vectors
 import Control.Monad.Eff
 import Control.Monad.Eff.Exception
 import Data.ArrayBuffer.Types (Float32Array())
@@ -34,18 +35,11 @@ import Math
 matrixToFloat32Array :: Mat4 -> Float32Array
 matrixToFloat32Array = asFloat32Array <<< toArray
 
--- | Takes the X, Y and Z values from a Vec4 and returns them as a Vec3
-dropW :: forall a. Vec4 a -> Vec3 a
-dropW v4 = vec3 (get4X v4) (get4Y v4) (get4Z v4)
-
 cubeModelMatrix :: CubeState -> Mat4
 cubeModelMatrix cs = mulM (makeTranslate cs.position) (makeRotate cs.angle j3)
 
 viewMatrix :: Radians -> Radians -> Mat4
-viewMatrix pitch yaw = mulM (makeRotate pitch pitchAxis) yawMatrix
-  where
-  yawMatrix = makeRotate yaw j3
-  pitchAxis = dropW $ mulMatVect yawMatrix i4
+viewMatrix pitch yaw = mulM (makeRotate pitch (rotateVec3 j3 yaw i3)) (makeRotate yaw j3)
 
 -- | Get the cube's model view matrix from the camera and cube angles
 cubeMVMatrix :: CubeState -> Radians -> Radians -> Float32Array

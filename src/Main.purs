@@ -44,10 +44,7 @@ inFullscreen = do
     Tuple (Just _) (Just _) -> return true
     Tuple _ _ -> return false
 
--- | Type for tracking which keys are currently depressed
-type KeyboardState = {w :: Boolean, a :: Boolean, s :: Boolean, d :: Boolean}
-
--- | Update the state of the key with the given key code if it is one we are tracking 
+-- | Update the state of the key with the given key code if it is one we are tracking
 updateKey :: Int -> Boolean -> KeyboardState -> KeyboardState
 updateKey code isDown ks | code == D.wKeyCode = {w: isDown, a: ks.a, d: ks.d, s: ks.s}
 updateKey code isDown ks | code == D.aKeyCode = {w: ks.w, a: isDown, d: ks.d, s: ks.s}
@@ -114,7 +111,7 @@ documentFullscreenChange keyupListener keydownListener moveListener targetCanvas
 tick :: forall eff h. RenderingContext -> STRef h AppState -> Milliseconds -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now, st :: ST h | eff) Unit
 tick ctx stateRef time = do
   newTime <- nowEpochMilliseconds
-  state <- modifySTRef stateRef $ mapSimulationState (timestep (newTime - time))
+  state <- modifySTRef stateRef (\st -> {keyboard: st.keyboard, simulation: timestep (newTime - time) st.keyboard st.simulation})
   render ctx state.simulation
   D.requestAnimationFrame $ tick ctx stateRef newTime
 

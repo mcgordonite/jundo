@@ -4,6 +4,7 @@ module Jundo.Simulation (
   SimulationState(..),
   CameraState(..),
   CubeState(..),
+  KeyboardState(..),
   MouseMove(..),
   initialSimulationState,
   applyMouseMove,
@@ -12,15 +13,18 @@ module Jundo.Simulation (
   ) where
 
 import Prelude
+import Jundo.Vectors
 import Data.Time (Milliseconds(..), Seconds(..), toSeconds)
+import Data.Vector
 import Data.Vector3
 import Math
 
 type RadiansPerSecond = Number
+type MetersPerSecond = Number
 
 data RotationDirection = Clockwise | Anticlockwise
 type CubeState = {direction :: RotationDirection, angle :: Radians, position :: Vec3 Number}
-type CameraState = {yaw :: Radians, pitch :: Radians}
+type CameraState = {yaw :: Radians, pitch :: Radians, position :: Vec3 Number}
 type SimulationState = {cube :: CubeState, camera :: CameraState}
 
 mapCameraState :: (CameraState -> CameraState) -> SimulationState -> SimulationState
@@ -32,9 +36,13 @@ mapCubeState f st = {cube: f st.cube, camera: st.camera}
 initialSimulationState :: SimulationState
 initialSimulationState = {
   cube: {direction: Anticlockwise, angle: 0.0, position: vec3 0.0 0.0 (-6.0)},
-  camera: {pitch: 0.0, yaw: 0.0}
+  camera: {pitch: 0.0, yaw: 0.0, position: vec3 0.0 0.0 0.0}
   }
 
+-- | Type for tracking which keys are currently depressed
+type KeyboardState = {w :: Boolean, a :: Boolean, s :: Boolean, d :: Boolean}
+
+-- | Rotation speed of the cube
 angularSpeed :: RadiansPerSecond
 angularSpeed = 1.0
 
@@ -42,13 +50,32 @@ angularSpeed = 1.0
 angleFromVelocity :: RadiansPerSecond -> Seconds -> Radians
 angleFromVelocity v (Seconds t) = v * t
 
--- | Update the simulation state to reflect a change in simulation time
-timestep :: Milliseconds -> SimulationState -> SimulationState
-timestep step = mapCubeState (\cs -> {direction: cs.direction, position: cs.position, angle: cs.angle + angleChange cs.direction})
+-- | Camera movement rate
+movementRate :: MetersPerSecond
+movementRate = 0.1
+
+-- | Convert the keyboard state into a unit vector in the direction of movement if the camera was pointing in the -z direction
+cameraUnitVelocity :: KeyboardState -> Vec3 Number
+cameraUnitVelocity {w: true, a: false, d: false, s: false} = scale (-1.0) k3
+cameraUnitVelocity {w: false, a: false, d: false, s: true} = k3
+cameraUnitVelocity {w: false, a: true, d: false, s: false} = scale (-1.0) i3
+cameraUnitVelocity {w: false, a: false, d: true, s: false} = i3
+cameraUnitVelocity {w: true, a: true, d: false, s: false} = vec3 (-sqrt2) 0.0 (-sqrt2)
+cameraUnitVelocity {w: true, a: false, d: true, s: false} = vec3 sqrt2 0.0 (-sqrt2)
+cameraUnitVelocity {w: false, a: true, d: false, s: true} = vec3 (-sqrt2) 0.0 (sqrt2)
+cameraUnitVelocity {w: false, a: false, d: true, s: true} = vec3 sqrt2 0.0 (sqrt2)
+cameraUnitVelocity _ = vec3 0.0 0.0 0.0
+
+-- | Update the simulation state to reflect a change in simulation time, applying camera and cube movement
+timestep :: Milliseconds -> KeyboardState -> SimulationState -> SimulationState
+timestep step ks {cube: cube, camera: camera} = {
+  cube: {direction: cube.direction, position: cube.position, angle: cube.angle + angleChange cube.direction},
+  -- TODO: Apply pitch and movement rate
+  camera: {pitch: camera.pitch, yaw: camera.yaw, position: vAdd camera.position $ rotateVec3 j3 camera.yaw (cameraUnitVelocity ks)}
+  }
   where
-  angleChange :: RotationDirection -> Radians
-  angleChange direction = directionMultiplier direction * angleFromVelocity angularSpeed (toSeconds step)
-  directionMultiplier :: RotationDirection -> Number
+  stepSeconds = toSeconds step
+  angleChange direction = directionMultiplier direction * angleFromVelocity angularSpeed stepSeconds
   directionMultiplier direction = case direction of
     Anticlockwise -> 1.0
     Clockwise -> -1.0
@@ -64,9 +91,11 @@ toggleDirection = mapCubeState (\cs -> {direction: newDirection cs.direction, an
 -- | Type representing a change in mouse position (x y)
 data MouseMove = MouseMove Number Number
 
+-- | Radians of pitch change per unit mouse movement
 pitchSensitivity :: Radians
 pitchSensitivity = 0.01
 
+-- | Radians of yaw change per unit mouse movement
 yawSensitivity :: Radians
 yawSensitivity = 0.01
 
@@ -74,7 +103,8 @@ yawSensitivity = 0.01
 applyMouseMove :: MouseMove -> SimulationState -> SimulationState
 applyMouseMove (MouseMove dx dy) = mapCameraState \cs -> {
   pitch: ensurePitch $ cs.pitch + dy * pitchSensitivity,
-  yaw: cs.yaw + dx * yawSensitivity
+  yaw: cs.yaw + dx * yawSensitivity,
+  position: cs.position
   }
   where
   -- Pitch must be between -0.5 pi and 0.5 pi
