@@ -88,6 +88,7 @@ module Graphics.WebGL.Free (
   getUniformLocation,
   linkProgram,
   programOperation,
+  uniform3fv,
   uniformMatrix4fv,
   vertexAttribPointer,
   viewport,
@@ -230,12 +231,14 @@ data WebGLProgramOperationF a
   = ArrayBufferOperation WebGLBuffer (WebGLArrayBufferOperation Unit) a
   | ElementArrayBufferOperation WebGLBuffer (WebGLElementArrayBufferOperation Unit) a
   | EnableVertexAttribArray AttributeLocation a
+  | Uniform3fv WebGLUniformLocation A.Float32Array a
   | UniformMatrix4fv WebGLUniformLocation GLboolean A.Float32Array a
 
 instance functorWebGLProgramOperationF :: Functor WebGLProgramOperationF where
   map f (ArrayBufferOperation buffer operation x) = ArrayBufferOperation buffer operation (f x)
   map f (ElementArrayBufferOperation buffer operation x) = ElementArrayBufferOperation buffer operation (f x)
   map f (EnableVertexAttribArray i x) = EnableVertexAttribArray i (f x)
+  map f (Uniform3fv location value x) = Uniform3fv location value (f x)
   map f (UniformMatrix4fv l t v x) = UniformMatrix4fv l t v (f x)
 
 -- | Free monad for WebGL computations using a shader program
@@ -384,6 +387,9 @@ elementArrayBufferOperation buffer operation = liftF $ ElementArrayBufferOperati
 
 enableVertexAttribArray :: AttributeLocation -> WebGLProgramOperation Unit
 enableVertexAttribArray location = liftF $ EnableVertexAttribArray location unit
+
+uniform3fv :: WebGLUniformLocation -> A.Float32Array -> WebGLProgramOperation Unit
+uniform3fv location value = liftF $ Uniform3fv location value unit
 
 uniformMatrix4fv :: WebGLUniformLocation -> GLboolean -> A.Float32Array -> WebGLProgramOperation Unit
 uniformMatrix4fv location transpose value = liftF $ UniformMatrix4fv location transpose value unit
@@ -541,6 +547,9 @@ interpretWebGLProgramOperation gl (ArrayBufferOperation buffer operation rest) =
 interpretWebGLProgramOperation gl (ElementArrayBufferOperation buffer operation rest) = do
   R.bindBuffer gl GL.elementArrayBuffer buffer
   runFreeM (interpretWebGLElementArrayBufferOperation gl) operation
+  return rest
+interpretWebGLProgramOperation gl (Uniform3fv location value rest) = do
+  R.uniform3fv_ gl location value
   return rest
 interpretWebGLProgramOperation gl (UniformMatrix4fv location transpose value rest) = do
   R.uniformMatrix4fv_ gl location transpose value
