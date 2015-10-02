@@ -26,7 +26,7 @@ import Graphics.WebGL.Context
 import Graphics.WebGL.Free
 import Graphics.WebGL.Raw.Types
 import Graphics.Canvas (Canvas(), CanvasElement(), setCanvasDimensions)
-import Math.Angles
+import Math
 
 -- | The matrix library is based on plain JavaScript arrays. Extract the backing array from the matrix and convert
 -- | it to a typed array so we can use it with WebGL.

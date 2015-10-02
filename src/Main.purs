@@ -58,16 +58,16 @@ updateKey _ _ ks = ks
 -- Type for passing application state between event listeners and the render loop
 type AppState = {keyboard :: KeyboardState, simulation :: SimulationState}
 
-modifyKeyboardState :: (KeyboardState -> KeyboardState) -> AppState -> AppState
-modifyKeyboardState f state = {keyboard: f state.keyboard, simulation: state.simulation}
+mapKeyboardState :: (KeyboardState -> KeyboardState) -> AppState -> AppState
+mapKeyboardState f state = {keyboard: f state.keyboard, simulation: state.simulation}
 
-modifySimulationState :: (SimulationState -> SimulationState) -> AppState -> AppState
-modifySimulationState f state = {keyboard: state.keyboard, simulation: f state.simulation}
+mapSimulationState :: (SimulationState -> SimulationState) -> AppState -> AppState
+mapSimulationState f state = {keyboard: state.keyboard, simulation: f state.simulation}
 
 -- | Handle canvas mousemove events by updating the simulation state.
 canvasMousemove :: forall eff h. STRef h AppState -> D.MouseEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
 canvasMousemove stateRef e = do
-  movement <- pure $ Tuple (D.movementX e) (D.movementY e)
+  modifySTRef stateRef $ mapSimulationState $ applyMouseMove $ MouseMove (D.movementX e) (D.movementY e)
   return unit
 
 -- | Handle canvas clicks. If we are not in full screen, open the canvas in full screen.
@@ -77,7 +77,7 @@ canvasClick stateRef el _ = do
   fullScreen <- inFullscreen
   if fullScreen
     then do
-      modifySTRef stateRef $ modifySimulationState toggleDirection
+      modifySTRef stateRef $ mapSimulationState toggleDirection
       return unit
     else do
       D.requestFullscreen el
@@ -86,13 +86,13 @@ canvasClick stateRef el _ = do
 -- | Monitor document keydown events so we can track which keys are depressed
 documentKeydown :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
 documentKeydown stateRef e = do
-  modifySTRef stateRef $ modifyKeyboardState $ updateKey (D.keyCode e) true
+  modifySTRef stateRef $ mapKeyboardState $ updateKey (D.keyCode e) true
   return unit
 
 -- | Monitor document keyup events so we can track which keys are depressed
 documentKeyup :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
 documentKeyup stateRef e = do
-  modifySTRef stateRef $ modifyKeyboardState $ updateKey (D.keyCode e) false
+  modifySTRef stateRef $ mapKeyboardState $ updateKey (D.keyCode e) false
   return unit
 
 -- | Add keyboard and mouse move event listeners when we enter full screen, and remove them when we leave it
@@ -114,7 +114,7 @@ documentFullscreenChange keyupListener keydownListener moveListener targetCanvas
 tick :: forall eff h. RenderingContext -> STRef h AppState -> Milliseconds -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now, st :: ST h | eff) Unit
 tick ctx stateRef time = do
   newTime <- nowEpochMilliseconds
-  state <- modifySTRef stateRef $ modifySimulationState (timestep (newTime - time))
+  state <- modifySTRef stateRef $ mapSimulationState (timestep (newTime - time))
   render ctx state.simulation
   D.requestAnimationFrame $ tick ctx stateRef newTime
 
