@@ -65,7 +65,7 @@ initialiseWebGL el canvas = do
 
 -- | Render the simulation state to the canvas
 render :: forall eff. RenderingContext -> SimulationState -> Eff (canvas :: Canvas, dom :: D.DOM | eff) Unit
-render (RenderingContext ctx) state = do
+render (RenderingContext ctx) {cube: cubeState, camera: cameraState} = do
   -- Update the canvas dimensions in case the element dimensions have changed
   height <- D.clientHeight $ ctx.el
   width <- D.clientWidth $ ctx.el
@@ -83,7 +83,7 @@ render (RenderingContext ctx) state = do
     -- Draw the cube!
     programOperation ctx.program do
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
-      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix state.angle
+      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix cubeState.angle
       arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.aVertex 3 false 0 0
       elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements triangles 36 0
   return unit
