@@ -23,3 +23,5 @@ if (Element.prototype.webkitRequestPointerLock) {
 } else if (Element.prototype.msRequestPointerLock) {
   pointerLockChangeName = 'mspointerlockchange';
 }
+
+exports.pointerLockChangeName = pointerLockChangeName;
