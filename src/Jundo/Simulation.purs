@@ -64,10 +64,10 @@ toggleDirection = mapCubeState (\cs -> {direction: newDirection cs.direction, an
 data MouseMove = MouseMove Number Number
 
 pitchSensitivity :: Radians
-pitchSensitivity = 0.05
+pitchSensitivity = 0.01
 
 yawSensitivity :: Radians
-yawSensitivity = 0.05
+yawSensitivity = 0.01
 
 applyMouseMove :: MouseMove -> SimulationState -> SimulationState
 applyMouseMove (MouseMove dx dy) = mapCameraState \cs -> {

@@ -18,7 +18,8 @@ import Data.Matrix
 import Data.Matrix4
 import Data.Tuple
 import Data.TypedArray (asFloat32Array)
-import Data.Vector3 (vec3, j3)
+import Data.Vector3 (vec3, Vec3(), i3, j3)
+import Data.Vector4
 import qualified DOM as D
 import qualified DOM.Node.Element.Experimental as D
 import qualified DOM.Node.Types as D
@@ -33,9 +34,25 @@ import Math
 matrixToFloat32Array :: Mat4 -> Float32Array
 matrixToFloat32Array = asFloat32Array <<< toArray
 
--- | Get the transformation matrix for the cube's vertices based on it's current angle
-mvMatrix :: Radians -> Float32Array
-mvMatrix angle = matrixToFloat32Array $ rotate angle j3 $ translate (vec3 0.0 0.0 (-6.0)) identity
+-- | Takes the X, Y and Z values from a Vec4 and returns them as a Vec3
+dropW :: forall a. Vec4 a -> Vec3 a
+dropW v4 = vec3 (get4X v4) (get4Y v4) (get4Z v4)
+
+cubePosition :: Vec3N
+cubePosition = vec3 0.0 0.0 (-6.0)
+
+cubeModelMatrix :: Radians -> Mat4
+cubeModelMatrix angle = mulM (makeTranslate cubePosition) (makeRotate angle j3)
+
+viewMatrix :: Radians -> Radians -> Mat4
+viewMatrix pitch yaw = mulM (makeRotate pitch pitchAxis) yawMatrix
+  where
+  yawMatrix = makeRotate yaw j3
+  pitchAxis = dropW $ mulMatVect yawMatrix i4
+
+-- | Get the cube's model view matrix from the camera and cube angles
+cubeMVMatrix :: Radians -> Radians -> Radians -> Float32Array
+cubeMVMatrix cubeAngle pitch yaw = matrixToFloat32Array $ mulM (viewMatrix pitch yaw) (cubeModelMatrix cubeAngle)
 
 -- | Get a perspective matrix as a typed array for the given buffer dimensions
 perspectiveMatrix :: Int -> Int -> Float32Array
@@ -83,7 +100,7 @@ render (RenderingContext ctx) {cube: cubeState, camera: cameraState} = do
     -- Draw the cube!
     programOperation ctx.program do
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
-      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix cubeState.angle
+      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ cubeMVMatrix cubeState.angle cameraState.pitch cameraState.yaw
       arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.aVertex 3 false 0 0
       elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements triangles 36 0
   return unit
