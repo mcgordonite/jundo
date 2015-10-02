@@ -2,12 +2,14 @@
 
 var fullscreenPrefix = 'fullscreen';
 
-if (Element.prototype.webkitRequestFullscreen !== undefined) {
-  fullscreenPrefix = 'webkitFullscreen';
-} else if (Element.prototype.mozRequestFullscreen !== undefined) {
-  fullscreenPrefix = 'mozFullscreen';
-} else if (Element.prototype.msRequestFullscreen !== undefined) {
-  fullscreenPrefix = 'msFullscreen';
+if (Element !== undefined) {
+  if (Element.prototype.webkitRequestFullscreen !== undefined) {
+    fullscreenPrefix = 'webkitFullscreen';
+  } else if (Element.prototype.mozRequestFullscreen !== undefined) {
+    fullscreenPrefix = 'mozFullscreen';
+  } else if (Element.prototype.msRequestFullscreen !== undefined) {
+    fullscreenPrefix = 'msFullscreen';
+  }
 }
 
 exports.fullscreenEnabled = function(doc) {
@@ -33,12 +35,14 @@ exports.exitPointerLock = function(doc) {
 
 var pointerLockElementProperty = 'pointerLockElement';
 
-if (Document.prototype.webkitPointerLockElement !== undefined) {
-  pointerLockElementProperty = 'webkitPointerLockElement';
-} else if (Document.prototype.mozPointerLockElement !== undefined) {
-  pointerLockElementProperty = 'mozPointerLockElement';
-} else if (Document.prototype.msPointerLockElement !== undefined) {
-  pointerLockElementProperty = 'msPointerLockElement';
+if (Document !== undefined) {
+  if (Document.prototype.webkitPointerLockElement !== undefined) {
+    pointerLockElementProperty = 'webkitPointerLockElement';
+  } else if (Document.prototype.mozPointerLockElement !== undefined) {
+    pointerLockElementProperty = 'mozPointerLockElement';
+  } else if (Document.prototype.msPointerLockElement !== undefined) {
+    pointerLockElementProperty = 'msPointerLockElement';
+  }
 }
 
 exports.pointerLockElement = function(doc) {
