@@ -38,11 +38,8 @@ matrixToFloat32Array = asFloat32Array <<< toArray
 dropW :: forall a. Vec4 a -> Vec3 a
 dropW v4 = vec3 (get4X v4) (get4Y v4) (get4Z v4)
 
-cubePosition :: Vec3N
-cubePosition = vec3 0.0 0.0 (-6.0)
-
-cubeModelMatrix :: Radians -> Mat4
-cubeModelMatrix angle = mulM (makeTranslate cubePosition) (makeRotate angle j3)
+cubeModelMatrix :: CubeState -> Mat4
+cubeModelMatrix cs = mulM (makeTranslate cs.position) (makeRotate cs.angle j3)
 
 viewMatrix :: Radians -> Radians -> Mat4
 viewMatrix pitch yaw = mulM (makeRotate pitch pitchAxis) yawMatrix
@@ -51,8 +48,8 @@ viewMatrix pitch yaw = mulM (makeRotate pitch pitchAxis) yawMatrix
   pitchAxis = dropW $ mulMatVect yawMatrix i4
 
 -- | Get the cube's model view matrix from the camera and cube angles
-cubeMVMatrix :: Radians -> Radians -> Radians -> Float32Array
-cubeMVMatrix cubeAngle pitch yaw = matrixToFloat32Array $ mulM (viewMatrix pitch yaw) (cubeModelMatrix cubeAngle)
+cubeMVMatrix :: CubeState -> Radians -> Radians -> Float32Array
+cubeMVMatrix cs pitch yaw = matrixToFloat32Array $ mulM (viewMatrix pitch yaw) (cubeModelMatrix cs)
 
 -- | Get a perspective matrix as a typed array for the given buffer dimensions
 perspectiveMatrix :: Int -> Int -> Float32Array
@@ -100,7 +97,7 @@ render (RenderingContext ctx) {cube: cubeState, camera: cameraState} = do
     -- Draw the cube!
     programOperation ctx.program do
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
-      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ cubeMVMatrix cubeState.angle cameraState.pitch cameraState.yaw
+      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ cubeMVMatrix cubeState cameraState.pitch cameraState.yaw
       arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.aVertex 3 false 0 0
       elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements triangles 36 0
   return unit

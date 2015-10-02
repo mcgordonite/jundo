@@ -13,12 +13,13 @@ module Jundo.Simulation (
 
 import Prelude
 import Data.Time (Milliseconds(..), Seconds(..), toSeconds)
+import Data.Vector3
 import Math
 
 type RadiansPerSecond = Number
 
 data RotationDirection = Clockwise | Anticlockwise
-type CubeState = {direction :: RotationDirection, angle :: Radians}
+type CubeState = {direction :: RotationDirection, angle :: Radians, position :: Vec3 Number}
 type CameraState = {yaw :: Radians, pitch :: Radians}
 type SimulationState = {cube :: CubeState, camera :: CameraState}
 
@@ -30,7 +31,7 @@ mapCubeState f st = {cube: f st.cube, camera: st.camera}
 
 initialSimulationState :: SimulationState
 initialSimulationState = {
-  cube: {direction: Anticlockwise, angle: 0.0},
+  cube: {direction: Anticlockwise, angle: 0.0, position: vec3 0.0 0.0 (-6.0)},
   camera: {pitch: 0.0, yaw: 0.0}
   }
 
@@ -43,7 +44,7 @@ angleFromVelocity v (Seconds t) = v * t
 
 -- | Update the simulation state to reflect a change in simulation time
 timestep :: Milliseconds -> SimulationState -> SimulationState
-timestep step = mapCubeState (\cs -> {direction: cs.direction, angle: cs.angle + angleChange cs.direction})
+timestep step = mapCubeState (\cs -> {direction: cs.direction, position: cs.position, angle: cs.angle + angleChange cs.direction})
   where
   angleChange :: RotationDirection -> Radians
   angleChange direction = directionMultiplier direction * angleFromVelocity angularSpeed (toSeconds step)
@@ -54,7 +55,7 @@ timestep step = mapCubeState (\cs -> {direction: cs.direction, angle: cs.angle +
 
 -- | Make the cube spin the other way! Excitement.
 toggleDirection :: SimulationState -> SimulationState
-toggleDirection = mapCubeState (\cs -> {direction: newDirection cs.direction, angle: cs.angle})
+toggleDirection = mapCubeState (\cs -> {direction: newDirection cs.direction, angle: cs.angle, position: cs.position})
   where
   newDirection d = case d of
     Clockwise -> Anticlockwise
@@ -69,6 +70,7 @@ pitchSensitivity = 0.01
 yawSensitivity :: Radians
 yawSensitivity = 0.01
 
+-- | Apply a change in mouse position to the simulation state
 applyMouseMove :: MouseMove -> SimulationState -> SimulationState
 applyMouseMove (MouseMove dx dy) = mapCameraState \cs -> {
   pitch: ensurePitch $ cs.pitch + dy * pitchSensitivity,
