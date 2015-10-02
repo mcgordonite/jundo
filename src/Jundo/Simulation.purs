@@ -2,6 +2,8 @@
 module Jundo.Simulation (
   RotationDirection(..),
   SimulationState(..),
+  CameraState(..),
+  CubeState(..),
   MouseMove(..),
   initialSimulationState,
   applyMouseMove,
@@ -62,10 +64,10 @@ toggleDirection = mapCubeState (\cs -> {direction: newDirection cs.direction, an
 data MouseMove = MouseMove Number Number
 
 pitchSensitivity :: Radians
-pitchSensitivity = 0.1
+pitchSensitivity = 0.05
 
 yawSensitivity :: Radians
-yawSensitivity = 0.1
+yawSensitivity = 0.05
 
 applyMouseMove :: MouseMove -> SimulationState -> SimulationState
 applyMouseMove (MouseMove dx dy) = mapCameraState \cs -> {
