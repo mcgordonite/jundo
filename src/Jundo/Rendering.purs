@@ -15,10 +15,11 @@ import Control.Monad.Eff.Exception
 import Data.ArrayBuffer.Types (Float32Array())
 import Data.Int (toNumber)
 import Data.Int.Bits ((.|.))
-import Data.Matrix
+import Data.Matrix (toArray)
 import Data.Matrix4
 import Data.Tuple
 import Data.TypedArray (asFloat32Array)
+import qualified Data.Vector as V
 import Data.Vector3 (vec3, Vec3(), i3, j3)
 import Data.Vector4
 import qualified DOM as D
@@ -38,12 +39,15 @@ matrixToFloat32Array = asFloat32Array <<< toArray
 cubeModelMatrix :: CubeState -> Mat4
 cubeModelMatrix cs = mulM (makeTranslate cs.position) (makeRotate cs.angle j3)
 
-viewMatrix :: Radians -> Radians -> Mat4
-viewMatrix pitch yaw = mulM (makeRotate pitch (rotateVec3 j3 yaw i3)) (makeRotate yaw j3)
+viewMatrix :: CameraState -> Mat4
+viewMatrix cs = mulM rotationMatrix translationMatrix
+  where
+  rotationMatrix = mulM (makeRotate cs.pitch (rotateVec3 j3 cs.yaw i3)) (makeRotate cs.yaw j3)
+  translationMatrix = makeTranslate $ V.scale (-1.0) cs.position
 
--- | Get the cube's model view matrix from the camera and cube angles
-cubeMVMatrix :: CubeState -> Radians -> Radians -> Float32Array
-cubeMVMatrix cs pitch yaw = matrixToFloat32Array $ mulM (viewMatrix pitch yaw) (cubeModelMatrix cs)
+-- | Get the cube's model view matrix from the simulation state
+cubeMVMatrix :: SimulationState -> Float32Array
+cubeMVMatrix state = matrixToFloat32Array $ mulM (viewMatrix state.camera) (cubeModelMatrix state.cube)
 
 -- | Get a perspective matrix as a typed array for the given buffer dimensions
 perspectiveMatrix :: Int -> Int -> Float32Array
@@ -73,7 +77,7 @@ initialiseWebGL el canvas = do
 
 -- | Render the simulation state to the canvas
 render :: forall eff. RenderingContext -> SimulationState -> Eff (canvas :: Canvas, dom :: D.DOM | eff) Unit
-render (RenderingContext ctx) {cube: cubeState, camera: cameraState} = do
+render (RenderingContext ctx) simulationState = do
   -- Update the canvas dimensions in case the element dimensions have changed
   height <- D.clientHeight $ ctx.el
   width <- D.clientWidth $ ctx.el
@@ -91,7 +95,7 @@ render (RenderingContext ctx) {cube: cubeState, camera: cameraState} = do
     -- Draw the cube!
     programOperation ctx.program do
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
-      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ cubeMVMatrix cubeState cameraState.pitch cameraState.yaw
+      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ cubeMVMatrix simulationState
       arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.aVertex 3 false 0 0
       elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements triangles 36 0
   return unit
