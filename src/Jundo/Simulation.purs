@@ -105,7 +105,7 @@ timestep step ks simulationState = mapCubeState updateCube $ mapCameraState upda
   updateCamera :: CameraState -> CameraState
   updateCamera (CameraState cs) = CameraState {pitch: cs.pitch, yaw: cs.yaw, position: vAdd cs.position positionChange}
     where
-    positionChange = scale movementRate $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
+    positionChange = scale (movementRate * stepSeconds) $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
 
 -- | Make the cube spin the other way! Excitement.
 toggleDirection :: SimulationState -> SimulationState
