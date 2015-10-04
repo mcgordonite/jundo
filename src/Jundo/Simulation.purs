@@ -23,24 +23,43 @@ type RadiansPerSecond = Number
 type MetersPerSecond = Number
 
 data RotationDirection = Clockwise | Anticlockwise
-type CubeState = {direction :: RotationDirection, angle :: Radians, position :: Vec3 Number}
-type CameraState = {yaw :: Radians, pitch :: Radians, position :: Vec3 Number}
-type SimulationState = {cube :: CubeState, camera :: CameraState}
+
+instance showRotationDirection :: Show RotationDirection where
+  show Clockwise = "Clockwise"
+  show Anticlockwise = "Anticlockwise"
+
+newtype CubeState = CubeState {direction :: RotationDirection, angle :: Radians, position :: Vec3 Number}
+
+instance showCubeState :: Show CubeState where
+  show (CubeState s) = "CubeState {direction: " ++ show s.direction ++ ", angle: " ++ show s.angle ++ ", position: " ++ show s.position ++ "}"
+
+newtype CameraState = CameraState {yaw :: Radians, pitch :: Radians, position :: Vec3 Number}
+
+instance showCameraState :: Show CameraState where
+  show (CameraState s) = " CameraState{yaw: " ++ show s.yaw ++ ", pitch: " ++ show s.pitch ++ ", position: " ++ show s.position ++ "}"
+
+newtype SimulationState = SimulationState {cube :: CubeState, camera :: CameraState}
+
+instance showSimulationState :: Show SimulationState where
+  show (SimulationState s) = "SimulationState {camera: " ++ show s.camera ++ ", cube: " ++ show s.cube ++ "}"
 
 mapCameraState :: (CameraState -> CameraState) -> SimulationState -> SimulationState
-mapCameraState f st = {cube: st.cube, camera: f st.camera}
+mapCameraState f (SimulationState s) = SimulationState {cube: s.cube, camera: f s.camera}
 
 mapCubeState :: (CubeState -> CubeState) -> SimulationState -> SimulationState
-mapCubeState f st = {cube: f st.cube, camera: st.camera}
+mapCubeState f (SimulationState s) = SimulationState {cube: f s.cube, camera: s.camera}
 
 initialSimulationState :: SimulationState
-initialSimulationState = {
-  cube: {direction: Anticlockwise, angle: 0.0, position: vec3 0.0 0.0 (-6.0)},
-  camera: {pitch: 0.0, yaw: 0.0, position: vec3 0.0 0.0 0.0}
+initialSimulationState = SimulationState {
+  cube: CubeState {direction: Anticlockwise, angle: 0.0, position: vec3 0.0 0.0 (-6.0)},
+  camera: CameraState {pitch: 0.0, yaw: 0.0, position: vec3 0.0 0.0 0.0}
   }
 
 -- | Type for tracking which keys are currently depressed
-type KeyboardState = {w :: Boolean, a :: Boolean, s :: Boolean, d :: Boolean}
+newtype KeyboardState = KeyboardState {w :: Boolean, a :: Boolean, s :: Boolean, d :: Boolean}
+
+instance showKeyboardState :: Show KeyboardState where
+  show (KeyboardState s) = "{w: " ++ show s.w ++ ", a: " ++ show s.a ++ ", s: " ++ show s.s ++ ", d: " ++ show s.d ++ "}"
 
 -- | Rotation speed of the cube
 angularSpeed :: RadiansPerSecond
@@ -56,33 +75,37 @@ movementRate = 0.1
 
 -- | Convert the keyboard state into a unit vector in the direction of movement if the camera was pointing in the -z direction
 cameraUnitVelocity :: KeyboardState -> Vec3 Number
-cameraUnitVelocity {w: true, a: false, d: false, s: false} = scale (-1.0) k3
-cameraUnitVelocity {w: false, a: false, d: false, s: true} = k3
-cameraUnitVelocity {w: false, a: true, d: false, s: false} = scale (-1.0) i3
-cameraUnitVelocity {w: false, a: false, d: true, s: false} = i3
-cameraUnitVelocity {w: true, a: true, d: false, s: false} = vec3 (-sqrt1_2) 0.0 (-sqrt1_2)
-cameraUnitVelocity {w: true, a: false, d: true, s: false} = vec3 sqrt1_2 0.0 (-sqrt1_2)
-cameraUnitVelocity {w: false, a: true, d: false, s: true} = vec3 (-sqrt1_2) 0.0 sqrt1_2
-cameraUnitVelocity {w: false, a: false, d: true, s: true} = vec3 sqrt1_2 0.0 sqrt1_2
+cameraUnitVelocity (KeyboardState {w: true, a: false, d: false, s: false}) = scale (-1.0) k3
+cameraUnitVelocity (KeyboardState {w: false, a: false, d: false, s: true}) = k3
+cameraUnitVelocity (KeyboardState {w: false, a: true, d: false, s: false}) = scale (-1.0) i3
+cameraUnitVelocity (KeyboardState {w: false, a: false, d: true, s: false}) = i3
+cameraUnitVelocity (KeyboardState {w: true, a: true, d: false, s: false}) = vec3 (-sqrt1_2) 0.0 (-sqrt1_2)
+cameraUnitVelocity (KeyboardState {w: true, a: false, d: true, s: false}) = vec3 sqrt1_2 0.0 (-sqrt1_2)
+cameraUnitVelocity (KeyboardState {w: false, a: true, d: false, s: true}) = vec3 (-sqrt1_2) 0.0 sqrt1_2
+cameraUnitVelocity (KeyboardState {w: false, a: false, d: true, s: true}) = vec3 sqrt1_2 0.0 sqrt1_2
 cameraUnitVelocity _ = vec3 0.0 0.0 0.0
 
 -- | Update the simulation state to reflect a change in simulation time, applying camera and cube movement
 timestep :: Milliseconds -> KeyboardState -> SimulationState -> SimulationState
-timestep step ks {cube: cube, camera: camera} = {
-  cube: {direction: cube.direction, position: cube.position, angle: cube.angle + angleChange cube.direction},
-  camera: {pitch: camera.pitch, yaw: camera.yaw, position: vAdd camera.position positionChange}
-  }
+timestep step ks simulationState = mapCubeState updateCube $ mapCameraState updateCamera simulationState
   where
+  stepSeconds :: Seconds
   stepSeconds = toSeconds step
-  angleChange direction = directionMultiplier direction * angleFromVelocity angularSpeed stepSeconds
-  directionMultiplier direction = case direction of
-    Anticlockwise -> 1.0
-    Clockwise -> -1.0
-  positionChange = scale movementRate $ rotateVec3 j3 camera.yaw (cameraUnitVelocity ks)
+  updateCube :: CubeState -> CubeState
+  updateCube (CubeState cs) = CubeState {direction: cs.direction, position: cs.position, angle: cs.angle + angleChange cs.direction}
+    where
+    angleChange direction = directionMultiplier * angleFromVelocity angularSpeed stepSeconds
+    directionMultiplier = case cs.direction of
+      Anticlockwise -> 1.0
+      Clockwise -> -1.0
+  updateCamera :: CameraState -> CameraState
+  updateCamera (CameraState cs) = CameraState {pitch: cs.pitch, yaw: cs.yaw, position: vAdd cs.position positionChange}
+    where
+    positionChange = scale movementRate $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
 
 -- | Make the cube spin the other way! Excitement.
 toggleDirection :: SimulationState -> SimulationState
-toggleDirection = mapCubeState (\cs -> {direction: newDirection cs.direction, angle: cs.angle, position: cs.position})
+toggleDirection = mapCubeState (\(CubeState s) -> CubeState {direction: newDirection s.direction, angle: s.angle, position: s.position})
   where
   newDirection d = case d of
     Clockwise -> Anticlockwise
@@ -90,6 +113,9 @@ toggleDirection = mapCubeState (\cs -> {direction: newDirection cs.direction, an
 
 -- | Type representing a change in mouse position (x y)
 data MouseMove = MouseMove Number Number
+
+instance showMouseMove :: Show MouseMove where
+  show (MouseMove dx dy) = "MouseMove (" ++ show dx ++ ", " ++ show dy ++ ")"
 
 -- | Radians of pitch change per unit mouse movement
 pitchSensitivity :: Radians
@@ -101,7 +127,7 @@ yawSensitivity = 0.01
 
 -- | Apply a change in mouse position to the simulation state
 applyMouseMove :: MouseMove -> SimulationState -> SimulationState
-applyMouseMove (MouseMove dx dy) = mapCameraState \cs -> {
+applyMouseMove (MouseMove dx dy) = mapCameraState \(CameraState cs) -> CameraState {
   pitch: ensurePitch $ cs.pitch + dy * pitchSensitivity,
   yaw: cs.yaw + dx * yawSensitivity,
   position: cs.position

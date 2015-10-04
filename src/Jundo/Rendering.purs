@@ -37,17 +37,17 @@ matrixToFloat32Array :: Mat4 -> Float32Array
 matrixToFloat32Array = asFloat32Array <<< toArray
 
 cubeModelMatrix :: CubeState -> Mat4
-cubeModelMatrix cs = mulM (makeTranslate cs.position) (makeRotate cs.angle j3)
+cubeModelMatrix (CubeState s) = mulM (makeTranslate s.position) (makeRotate s.angle j3)
 
 viewMatrix :: CameraState -> Mat4
-viewMatrix cs = mulM rotationMatrix translationMatrix
+viewMatrix (CameraState s) = mulM rotationMatrix translationMatrix
   where
-  rotationMatrix = mulM (makeRotate cs.pitch (rotateVec3 j3 cs.yaw i3)) (makeRotate cs.yaw j3)
-  translationMatrix = makeTranslate $ V.scale (-1.0) cs.position
+  rotationMatrix = mulM (makeRotate s.pitch (rotateVec3 j3 s.yaw i3)) (makeRotate s.yaw j3)
+  translationMatrix = makeTranslate $ V.scale (-1.0) s.position
 
 -- | Get the cube's model view matrix from the simulation state
 cubeMVMatrix :: SimulationState -> Float32Array
-cubeMVMatrix state = matrixToFloat32Array $ mulM (viewMatrix state.camera) (cubeModelMatrix state.cube)
+cubeMVMatrix (SimulationState s) = matrixToFloat32Array $ mulM (viewMatrix s.camera) (cubeModelMatrix s.cube)
 
 -- | Get a perspective matrix as a typed array for the given buffer dimensions
 perspectiveMatrix :: Int -> Int -> Float32Array

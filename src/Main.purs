@@ -46,20 +46,23 @@ inFullscreen = do
 
 -- | Update the state of the key with the given key code if it is one we are tracking
 updateKey :: Int -> Boolean -> KeyboardState -> KeyboardState
-updateKey code isDown ks | code == D.wKeyCode = {w: isDown, a: ks.a, d: ks.d, s: ks.s}
-updateKey code isDown ks | code == D.aKeyCode = {w: ks.w, a: isDown, d: ks.d, s: ks.s}
-updateKey code isDown ks | code == D.dKeyCode = {w: ks.w, a: ks.a, d: isDown, s: ks.s}
-updateKey code isDown ks | code == D.sKeyCode = {w: ks.w, a: ks.a, d: ks.d, s: isDown}
+updateKey code isDown (KeyboardState ks) | code == D.wKeyCode = KeyboardState {w: isDown, a: ks.a, d: ks.d, s: ks.s}
+updateKey code isDown (KeyboardState ks) | code == D.aKeyCode = KeyboardState {w: ks.w, a: isDown, d: ks.d, s: ks.s}
+updateKey code isDown (KeyboardState ks) | code == D.dKeyCode = KeyboardState {w: ks.w, a: ks.a, d: isDown, s: ks.s}
+updateKey code isDown (KeyboardState ks) | code == D.sKeyCode = KeyboardState {w: ks.w, a: ks.a, d: ks.d, s: isDown}
 updateKey _ _ ks = ks
 
 -- Type for passing application state between event listeners and the render loop
-type AppState = {keyboard :: KeyboardState, simulation :: SimulationState}
+newtype AppState = AppState {keyboard :: KeyboardState, simulation :: SimulationState}
+
+instance showAppState :: Show AppState where
+  show (AppState s) = "AppState {keyboard" ++ show s.keyboard ++ ", simulation: " ++ show s.simulation ++ "}"
 
 mapKeyboardState :: (KeyboardState -> KeyboardState) -> AppState -> AppState
-mapKeyboardState f state = {keyboard: f state.keyboard, simulation: state.simulation}
+mapKeyboardState f (AppState s) = AppState {keyboard: f s.keyboard, simulation: s.simulation}
 
 mapSimulationState :: (SimulationState -> SimulationState) -> AppState -> AppState
-mapSimulationState f state = {keyboard: state.keyboard, simulation: f state.simulation}
+mapSimulationState f (AppState s) = AppState {keyboard: s.keyboard, simulation: f s.simulation}
 
 -- | Handle canvas mousemove events by updating the simulation state.
 canvasMousemove :: forall eff h. STRef h AppState -> D.MouseEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
@@ -111,8 +114,8 @@ documentFullscreenChange keyupListener keydownListener moveListener targetCanvas
 tick :: forall eff h. RenderingContext -> STRef h AppState -> Milliseconds -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now, st :: ST h | eff) Unit
 tick ctx stateRef time = do
   newTime <- nowEpochMilliseconds
-  state <- modifySTRef stateRef (\st -> {keyboard: st.keyboard, simulation: timestep (newTime - time) st.keyboard st.simulation})
-  render ctx state.simulation
+  (AppState s) <- modifySTRef stateRef (\(AppState s) -> AppState {keyboard: s.keyboard, simulation: timestep (newTime - time) s.keyboard s.simulation})
+  render ctx s.simulation
   D.requestAnimationFrame $ tick ctx stateRef newTime
 
 -- | Start the application: set up the canvas and start the render loop
@@ -128,7 +131,7 @@ main = do
   -- Aaa mutable state!
   -- The event listeners need to update the state read by the render loop somehow, so let's use a mutable reference cell
   runST do
-    stateRef <- newSTRef {simulation: initialSimulationState, keyboard: {w: false, a: false, s: false, d: false}}
+    stateRef <- newSTRef $ AppState {simulation: initialSimulationState, keyboard: KeyboardState {w: false, a: false, s: false, d: false}}
 
     -- Event listeners added and removed when we enter and leave full screen
     keyupListener <- pure $ D.keyboardEventListener (documentKeyup stateRef)
