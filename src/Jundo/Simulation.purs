@@ -36,7 +36,7 @@ instance showCubeState :: Show CubeState where
 newtype CameraState = CameraState {yaw :: Radians, pitch :: Radians, position :: Vec3 Number}
 
 instance showCameraState :: Show CameraState where
-  show (CameraState s) = " CameraState{yaw: " ++ show s.yaw ++ ", pitch: " ++ show s.pitch ++ ", position: " ++ show s.position ++ "}"
+  show (CameraState s) = " CameraState {yaw: " ++ show s.yaw ++ ", pitch: " ++ show s.pitch ++ ", position: " ++ show s.position ++ "}"
 
 newtype SimulationState = SimulationState {cube :: CubeState, camera :: CameraState}
 
@@ -59,7 +59,7 @@ initialSimulationState = SimulationState {
 newtype KeyboardState = KeyboardState {w :: Boolean, a :: Boolean, s :: Boolean, d :: Boolean}
 
 instance showKeyboardState :: Show KeyboardState where
-  show (KeyboardState s) = "{w: " ++ show s.w ++ ", a: " ++ show s.a ++ ", s: " ++ show s.s ++ ", d: " ++ show s.d ++ "}"
+  show (KeyboardState s) = "KeyboardState {w: " ++ show s.w ++ ", a: " ++ show s.a ++ ", s: " ++ show s.s ++ ", d: " ++ show s.d ++ "}"
 
 -- | Rotation speed of the cube
 angularSpeed :: RadiansPerSecond
