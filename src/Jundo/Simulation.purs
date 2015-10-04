@@ -75,14 +75,18 @@ movementRate = 0.1
 
 -- | Convert the keyboard state into a unit vector in the direction of movement if the camera was pointing in the -z direction
 cameraUnitVelocity :: KeyboardState -> Vec3 Number
-cameraUnitVelocity (KeyboardState {w: true, a: false, d: false, s: false}) = scale (-1.0) k3
+cameraUnitVelocity (KeyboardState {w: true, a: false, d: false, s: false}) = vec3 0.0 0.0 (-1.0)
 cameraUnitVelocity (KeyboardState {w: false, a: false, d: false, s: true}) = k3
-cameraUnitVelocity (KeyboardState {w: false, a: true, d: false, s: false}) = scale (-1.0) i3
+cameraUnitVelocity (KeyboardState {w: false, a: true, d: false, s: false}) = vec3 (-1.0) 0.0 0.0
 cameraUnitVelocity (KeyboardState {w: false, a: false, d: true, s: false}) = i3
 cameraUnitVelocity (KeyboardState {w: true, a: true, d: false, s: false}) = vec3 (-sqrt1_2) 0.0 (-sqrt1_2)
 cameraUnitVelocity (KeyboardState {w: true, a: false, d: true, s: false}) = vec3 sqrt1_2 0.0 (-sqrt1_2)
 cameraUnitVelocity (KeyboardState {w: false, a: true, d: false, s: true}) = vec3 (-sqrt1_2) 0.0 sqrt1_2
 cameraUnitVelocity (KeyboardState {w: false, a: false, d: true, s: true}) = vec3 sqrt1_2 0.0 sqrt1_2
+cameraUnitVelocity (KeyboardState {w: true, a: true, d: true, s: false}) = vec3 0.0 0.0 (-1.0)
+cameraUnitVelocity (KeyboardState {w: false, a: true, d: true, s: true}) = k3
+cameraUnitVelocity (KeyboardState {w: true, a: true, d: false, s: true}) = vec3 (-1.0) 0.0 0.0
+cameraUnitVelocity (KeyboardState {w: true, a: false, d: true, s: true}) = i3
 cameraUnitVelocity _ = vec3 0.0 0.0 0.0
 
 -- | Update the simulation state to reflect a change in simulation time, applying camera and cube movement
