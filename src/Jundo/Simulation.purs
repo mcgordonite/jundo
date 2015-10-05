@@ -69,6 +69,10 @@ angularSpeed = 1.0
 angleFromVelocity :: RadiansPerSecond -> Seconds -> Radians
 angleFromVelocity v (Seconds t) = v * t
 
+-- | Distance is speed multiplied by time
+distanceFromVelocity :: MetersPerSecond -> Seconds -> Number
+distanceFromVelocity v (Seconds t) = v * t
+
 -- | Camera movement rate
 movementRate :: MetersPerSecond
 movementRate = 0.1
@@ -105,7 +109,7 @@ timestep step ks simulationState = mapCubeState updateCube $ mapCameraState upda
   updateCamera :: CameraState -> CameraState
   updateCamera (CameraState cs) = CameraState {pitch: cs.pitch, yaw: cs.yaw, position: vAdd cs.position positionChange}
     where
-    positionChange = scale (movementRate * stepSeconds) $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
+    positionChange = scale (distanceFromVelocity movementRate stepSeconds) $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
 
 -- | Make the cube spin the other way! Excitement.
 toggleDirection :: SimulationState -> SimulationState
