@@ -67,13 +67,9 @@ instance showKeyboardState :: Show KeyboardState where
 angularSpeed :: RadiansPerSecond
 angularSpeed = 1.0
 
--- | Angle change is velocity multiplied by time
-angleFromVelocity :: RadiansPerSecond -> Seconds -> Radians
-angleFromVelocity v (Seconds t) = v * t
-
--- | Distance is speed multiplied by time
-distanceFromVelocity :: MetersPerSecond -> Seconds -> Number
-distanceFromVelocity v (Seconds t) = v * t
+-- | The rate equation!
+applyRate :: Number -> Seconds -> Number
+applyRate v (Seconds t) = v * t
 
 -- | Camera movement rate
 movementRate :: MetersPerSecond
@@ -104,14 +100,14 @@ timestep step ks simulationState = mapCubeState updateCube $ mapCameraState upda
   updateCube :: CubeState -> CubeState
   updateCube (CubeState cs) = CubeState {direction: cs.direction, position: cs.position, angle: cs.angle + angleChange cs.direction}
     where
-    angleChange direction = directionMultiplier * angleFromVelocity angularSpeed stepSeconds
+    angleChange direction = directionMultiplier * applyRate angularSpeed stepSeconds
     directionMultiplier = case cs.direction of
       Anticlockwise -> 1.0
       Clockwise -> -1.0
   updateCamera :: CameraState -> CameraState
   updateCamera (CameraState cs) = CameraState {pitch: cs.pitch, yaw: cs.yaw, position: vAdd cs.position positionChange}
     where
-    positionChange = scale (distanceFromVelocity movementRate stepSeconds) $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
+    positionChange = scale (applyRate movementRate stepSeconds) $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
 
 -- | Make the cube spin the other way! Excitement.
 toggleDirection :: SimulationState -> SimulationState
