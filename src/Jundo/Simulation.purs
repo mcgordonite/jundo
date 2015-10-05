@@ -33,6 +33,8 @@ newtype CubeState = CubeState {direction :: RotationDirection, angle :: Radians,
 instance showCubeState :: Show CubeState where
   show (CubeState s) = "CubeState {direction: " ++ show s.direction ++ ", angle: " ++ show s.angle ++ ", position: " ++ show s.position ++ "}"
 
+-- | State of the camera. Yaw is anticlockwise rotation in radians about the positive y axis, pitch is anticlockwise rotation in radians about the 
+-- | positive x axis after it has been transformed for the yaw. At zero pitch and zero yaw, the camera points in the negative z direction.
 newtype CameraState = CameraState {yaw :: Radians, pitch :: Radians, position :: Vec3 Number}
 
 instance showCameraState :: Show CameraState where
@@ -137,7 +139,7 @@ yawSensitivity = 0.01
 applyMouseMove :: MouseMove -> SimulationState -> SimulationState
 applyMouseMove (MouseMove dx dy) = mapCameraState \(CameraState cs) -> CameraState {
   pitch: ensurePitch $ cs.pitch + dy * pitchSensitivity,
-  yaw: cs.yaw + dx * yawSensitivity,
+  yaw: cs.yaw - dx * yawSensitivity,
   position: cs.position
   }
   where

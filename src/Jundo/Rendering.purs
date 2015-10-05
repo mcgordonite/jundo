@@ -42,7 +42,7 @@ cubeModelMatrix (CubeState s) = mulM (makeTranslate s.position) (makeRotate s.an
 viewMatrix :: CameraState -> Mat4
 viewMatrix (CameraState s) = mulM rotationMatrix translationMatrix
   where
-  rotationMatrix = mulM (makeRotate s.pitch (rotateVec3 j3 s.yaw i3)) (makeRotate s.yaw j3)
+  rotationMatrix = mulM (makeRotate (-1.0 * s.pitch) i3) (makeRotate (-1.0 * s.yaw) j3)
   translationMatrix = makeTranslate $ V.scale (-1.0) s.position
 
 -- | Get the cube's model view matrix from the simulation state
