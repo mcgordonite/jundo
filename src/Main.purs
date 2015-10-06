@@ -67,7 +67,8 @@ mapSimulationState f (AppState s) = AppState {keyboard: s.keyboard, simulation: 
 -- | Handle canvas mousemove events by updating the simulation state.
 canvasMousemove :: forall eff h. STRef h AppState -> D.MouseEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
 canvasMousemove stateRef e = do
-  modifySTRef stateRef $ mapSimulationState $ applyMouseMove $ MouseMove (D.movementX e) (D.movementY e)
+  -- Moving the mouse "up" causes a negative movementY
+  modifySTRef stateRef $ mapSimulationState $ applyMouseMove $ MouseMove (D.movementX e) ((-1.0) * D.movementY e)
   return unit
 
 -- | Handle canvas clicks. If we are not in full screen, open the canvas in full screen.
