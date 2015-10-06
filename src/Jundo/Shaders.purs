@@ -31,16 +31,51 @@ vertexShaderId :: D.ElementId
 vertexShaderId = D.ElementId "vertex-shader"
 
 -- | Type to contain the locations of variables in the compiled shader program
-type ShaderVariables = {mvMatrix :: WebGLUniformLocation, pMatrix :: WebGLUniformLocation, aVertex :: AttributeLocation}
+type ShaderVariables = {
+  ambientColour :: WebGLUniformLocation,
+  directionalColour :: WebGLUniformLocation,
+  lightingDirection :: WebGLUniformLocation,
+  materialColour :: WebGLUniformLocation,
+  mvMatrix :: WebGLUniformLocation,
+  pMatrix :: WebGLUniformLocation,
+  nMatrix :: WebGLUniformLocation,
+  position :: AttributeLocation,
+  normal :: AttributeLocation
+  }
 
-shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> ShaderVariables
-shaderVariables mvMatrix pMatrix aVertex = {mvMatrix: mvMatrix, pMatrix: pMatrix, aVertex: aVertex}
+shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation
+  -> WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> AttributeLocation -> ShaderVariables
+shaderVariables mvMatrix pMatrix nMatrix materialColour ambientColour directionalColour lightingDirection position normal = {
+  ambientColour: ambientColour,
+  directionalColour: directionalColour,
+  lightingDirection: lightingDirection,
+  materialColour: materialColour,
+  mvMatrix: mvMatrix,
+  pMatrix: pMatrix,
+  nMatrix: nMatrix,
+  position: position,
+  normal: normal
+  }
 
 loadShaderSourceFromElement :: forall eff. D.ElementId -> Eff (dom :: D.DOM | eff) String
 loadShaderSourceFromElement elementId = do
   document <- D.window >>= D.document >>= pure <<< D.htmlDocumentToNonElementParentNode
   Just el <- D.getElementById elementId document >>= pure <<< toMaybe
   D.textContent $ D.elementToNode el
+
+uniformByName :: WebGLProgram -> String -> WebGL (Either String WebGLUniformLocation)
+uniformByName program name = do
+  maybeLocation <- getUniformLocation program name
+  case maybeLocation of
+    Nothing -> return $ Left ("Missing uniform location " ++ name)
+    Just location -> return $ Right location
+
+attributeByName :: WebGLProgram -> String -> WebGL (Either String AttributeLocation)
+attributeByName program name = do
+  maybeLocation <- getAttribLocation program name
+  case maybeLocation of
+    Nothing -> return $ Left ("Missing attribute location " ++ name)
+    Just location -> return $ Right location
 
 -- | Load and compile the fragment and vertex shader code from script tags, throwing a JavaScript exception if this fails
 initialiseShaderProgram :: forall eff. WebGLContext -> Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION | eff) (Tuple WebGLProgram ShaderVariables)
@@ -51,13 +86,30 @@ initialiseShaderProgram gl = do
   case eitherProgram of
     Left err -> throwException $ error err
     Right program -> do
-      maybeLocations <- runWebGL gl do
-        maybeMVMatrixLocation <- getUniformLocation program "uMVMatrix"
-        maybePMatrixLocation <- getUniformLocation program "uPMatrix"
-        maybeAVertexLocation <- getAttribLocation program "aVertexPosition"
-        return $ shaderVariables <$> maybeMVMatrixLocation <*> maybePMatrixLocation <*> maybeAVertexLocation
-      case maybeLocations of
-        Nothing -> throwException $ error "Missing shader program location"
-        Just locations -> do
-          runWebGL gl $ programOperation program $ enableVertexAttribArray locations.aVertex
-          return $ Tuple program locations
+      eitherVariables <- runWebGL gl do
+        eitherMVMatrixLocation <- uniformByName program "mvMatrix"
+        eitherPMatrixLocation <- uniformByName program "pMatrix"
+        eitherNMatrixLocation <- uniformByName program "nMatrix"
+        eitherMaterialColourLocation <- uniformByName program "materialColour"
+        eitherAmbientColourLocation <- uniformByName program "ambientColour"
+        eitherDirectionalColourLocation <- uniformByName program "directionalColour"
+        eitherLightingDirectionLocation <- uniformByName program "lightingDirection"
+        eitherPositionLocation <- attributeByName program "vertexPosition"
+        eitherNormalLocation <- attributeByName program "vertexNormal"
+        return $ shaderVariables
+          <$> eitherMVMatrixLocation
+          <*> eitherPMatrixLocation
+          <*> eitherNMatrixLocation
+          <*> eitherMaterialColourLocation
+          <*> eitherAmbientColourLocation
+          <*> eitherDirectionalColourLocation
+          <*> eitherLightingDirectionLocation
+          <*> eitherPositionLocation
+          <*> eitherNormalLocation
+      case eitherVariables of
+        Left err -> throwException $ error err
+        Right variables -> do
+          runWebGL gl $ programOperation program do
+            enableVertexAttribArray variables.position
+            enableVertexAttribArray variables.normal
+          return $ Tuple program variables

@@ -11,7 +11,7 @@ import Data.TypedArray (asFloat32Array, asUint16Array)
 import Graphics.WebGL.Free
 import Graphics.WebGL.Raw.Types
 
-type CubeBuffers = {vertex :: WebGLBuffer, index :: WebGLBuffer}
+type CubeBuffers = {vertex :: WebGLBuffer, index :: WebGLBuffer, colour :: WebGLBuffer, normal :: WebGLBuffer}
 
 vertices :: Float32Array
 vertices = asFloat32Array [
@@ -47,6 +47,40 @@ vertices = asFloat32Array [
   -1.0, 1.0, -1.0
   ]
 
+vertexNormals :: Float32Array
+vertexNormals = asFloat32Array [
+  -- Front face
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  -- Back face
+  0.0, 0.0, -1.0,
+  0.0, 0.0, -1.0,
+  0.0, 0.0, -1.0,
+  0.0, 0.0, -1.0,
+  -- Top face
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  -- Bottom face
+  0.0, -1.0, 0.0,
+  0.0, -1.0, 0.0,
+  0.0, -1.0, 0.0,
+  0.0, -1.0, 0.0,
+  -- Right face
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  -- Left face
+  -1.0, 0.0, 0.0,
+  -1.0, 0.0, 0.0,
+  -1.0, 0.0, 0.0,
+  -1.0, 0.0, 0.0
+  ]
+
 vertexIndices :: Uint16Array
 vertexIndices = asUint16Array [
   -- Front face
@@ -73,9 +107,13 @@ vertexIndices = asUint16Array [
 -- | Create and populate the WebGL buffers required to render a plain old cube
 initialiseBuffers :: WebGLProgram -> WebGL CubeBuffers
 initialiseBuffers program = do
-  Just cubeVertexBuffer <- createBuffer
-  Just cubeIndexBuffer <- createBuffer
+  Just vertexBuffer <- createBuffer
+  Just indexBuffer <- createBuffer
+  Just colourBuffer <- createBuffer
+  Just normalBuffer <- createBuffer
   programOperation program do
-    arrayBufferOperation cubeVertexBuffer $ bufferFloat32Data vertices staticDraw
-    elementArrayBufferOperation cubeIndexBuffer $ bufferUint16Data vertexIndices staticDraw
-  return {vertex: cubeVertexBuffer, index: cubeIndexBuffer}
+    arrayBufferOperation vertexBuffer $ bufferFloat32Data vertices staticDraw
+    arrayBufferOperation normalBuffer $ bufferFloat32Data vertexNormals staticDraw
+    elementArrayBufferOperation indexBuffer $ bufferUint16Data vertexIndices staticDraw
+  return {vertex: vertexBuffer, index: indexBuffer, colour: colourBuffer, normal: normalBuffer}
+
