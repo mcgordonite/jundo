@@ -9,16 +9,19 @@ import Prelude
 import Jundo.Cube
 import Jundo.Shaders
 import Jundo.Simulation
+import Jundo.Vectors
 import Control.Monad.Eff
 import Control.Monad.Eff.Exception
 import Data.ArrayBuffer.Types (Float32Array())
 import Data.Int (toNumber)
 import Data.Int.Bits ((.|.))
-import Data.Matrix
+import Data.Matrix (toArray)
 import Data.Matrix4
 import Data.Tuple
 import Data.TypedArray (asFloat32Array)
-import Data.Vector3 (vec3, j3)
+import qualified Data.Vector as V
+import Data.Vector3 (vec3, Vec3(), i3, j3)
+import Data.Vector4
 import qualified DOM as D
 import qualified DOM.Node.Element.Experimental as D
 import qualified DOM.Node.Types as D
@@ -26,7 +29,7 @@ import Graphics.WebGL.Context
 import Graphics.WebGL.Free
 import Graphics.WebGL.Raw.Types
 import Graphics.Canvas (Canvas(), CanvasElement(), setCanvasDimensions)
-import Math.Radians
+import Math
 
 -- | Hard coded RGB colour of the ambient lighting
 ambientColour :: Float32Array
@@ -45,9 +48,18 @@ lightingDirection = asFloat32Array [-0.5, -0.5, 0.707107]
 matrixToFloat32Array :: Mat4 -> Float32Array
 matrixToFloat32Array = asFloat32Array <<< toArray
 
--- | Get the transformation matrix for the cube's vertices based on it's current angle
-mvMatrix :: Radians -> Float32Array
-mvMatrix (Radians angle) = matrixToFloat32Array $ rotate angle j3 $ translate (vec3 0.0 0.0 (-6.0)) identity
+cubeModelMatrix :: CubeState -> Mat4
+cubeModelMatrix (CubeState s) = mulM (makeTranslate s.position) (makeRotate s.angle j3)
+
+viewMatrix :: CameraState -> Mat4
+viewMatrix (CameraState s) = mulM rotationMatrix translationMatrix
+  where
+  rotationMatrix = mulM (makeRotate (-1.0 * s.pitch) i3) (makeRotate (-1.0 * s.yaw) j3)
+  translationMatrix = makeTranslate $ V.scale (-1.0) s.position
+
+-- | Get the cube's model view matrix from the simulation state
+cubeMVMatrix :: SimulationState -> Float32Array
+cubeMVMatrix (SimulationState s) = matrixToFloat32Array $ mulM (viewMatrix s.camera) (cubeModelMatrix s.cube)
 
 -- | Get a perspective matrix as a typed array for the given buffer dimensions
 perspectiveMatrix :: Int -> Int -> Float32Array
@@ -77,7 +89,7 @@ initialiseWebGL el canvas = do
 
 -- | Render the simulation state to the canvas
 render :: forall eff. RenderingContext -> SimulationState -> Eff (canvas :: Canvas, dom :: D.DOM | eff) Unit
-render (RenderingContext ctx) state = do
+render (RenderingContext ctx) simulationState = do
   -- Update the canvas dimensions in case the element dimensions have changed
   height <- D.clientHeight $ ctx.el
   width <- D.clientWidth $ ctx.el
@@ -98,10 +110,10 @@ render (RenderingContext ctx) state = do
       uniform3fv ctx.shaderVariables.directionalColour directionalColour
       uniform3fv ctx.shaderVariables.lightingDirection lightingDirection
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
-      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ mvMatrix state.angle
+      uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ cubeMVMatrix simulationState
 
       -- TODO: Calculate vertex normal transformation matrix
-      uniformMatrix4fv ctx.shaderVariables.nMatrix false $ mvMatrix state.angle
+      uniformMatrix4fv ctx.shaderVariables.nMatrix false $ cubeMVMatrix simulationState
 
       arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.position 3 false 0 0
       arrayBufferOperation ctx.cubeBuffers.colour $ vertexAttribPointer ctx.shaderVariables.colour 3 false 0 0

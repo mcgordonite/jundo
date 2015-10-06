@@ -1,6 +1,8 @@
 -- | Functions relating to the KeyboardEvent type
 module DOM.Event.KeyboardEvent (
   KeyboardEventType(),
+  KeyboardEventListener(),
+  keyboardEventListener,
   keydown,
   keypress,
   keyup,
@@ -9,7 +11,8 @@ module DOM.Event.KeyboardEvent (
   aKeyCode,
   sKeyCode,
   dKeyCode,
-  addKeyboardEventListener
+  addKeyboardEventListener,
+  removeKeyboardEventListener
   ) where
 
 import Prelude
@@ -42,11 +45,19 @@ sKeyCode = 83
 dKeyCode :: Int
 dKeyCode = 68
 
+-- | Type representing a DOM EventListener for keyboard events
 foreign import data KeyboardEventListener :: # ! -> *
+
+-- | Create a KeyboardEventListener from an action in the Eff monad
 foreign import keyboardEventListener :: forall eff a. (KeyboardEvent -> Eff eff a) -> KeyboardEventListener eff
+
 foreign import addKeyboardEventListenerImpl :: forall eff. EventType -> KeyboardEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
+foreign import removeKeyboardEventListenerImpl :: forall eff. EventType -> KeyboardEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
 
 -- | Add an event listener to the given element for the given keyboard event type
-addKeyboardEventListener :: forall eff a. KeyboardEventType -> (KeyboardEvent -> Eff (dom :: DOM | eff) a) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
-addKeyboardEventListener (KeyboardEventType event) callback useCapture target =
-  addKeyboardEventListenerImpl event (keyboardEventListener callback) useCapture target
+addKeyboardEventListener :: forall eff. KeyboardEventType -> KeyboardEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
+addKeyboardEventListener (KeyboardEventType eventType) = addKeyboardEventListenerImpl eventType
+
+-- | Remove a keyboard event listener
+removeKeyboardEventListener :: forall eff. KeyboardEventType -> KeyboardEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
+removeKeyboardEventListener (KeyboardEventType eventType) = removeKeyboardEventListenerImpl eventType
