@@ -22,3 +22,16 @@ exports.addKeyboardEventListenerImpl = function (type) {
     };
   };
 };
+
+exports.removeKeyboardEventListenerImpl = function (type) {
+  return function (listener) {
+    return function (useCapture) {
+      return function (target) {
+        return function () {
+          target.removeEventListener(type, listener, useCapture);
+          return {};
+        };
+      };
+    };
+  };
+};

@@ -2,127 +2,147 @@
 module Main where
 
 import Prelude
-import Cube
-import Shaders
-import Simulation
+import Jundo.Rendering
+import Jundo.Simulation
 import Control.Monad.Eff
 import Control.Monad.Eff.Exception
 import Control.Monad.ST
-import Data.ArrayBuffer.Types (Float32Array())
 import Data.Date (Now(), nowEpochMilliseconds)
 import Data.Time (Milliseconds(..))
-import Data.Either
-import Data.Int (toNumber)
-import Data.Int.Bits
-import Data.Matrix
-import Data.Matrix4
-import Data.Vector3 (vec3, j3)
 import Data.Maybe
 import Data.Nullable
 import Data.Tuple
-import Data.TypedArray (asFloat32Array)
 import qualified DOM as D
 import qualified DOM.Event.EventTarget as D
 import qualified DOM.Event.Experimental as D
+import qualified DOM.Event.KeyboardEvent as D
 import qualified DOM.Event.MouseEvent as D
-import qualified DOM.Event.Types (MouseEvent()) as D
+import qualified DOM.Event.Types (Event(), EventTarget(), KeyboardEvent(), MouseEvent()) as D
 import qualified DOM.HTML as D
 import qualified DOM.HTML.Types as D
 import qualified DOM.HTML.Window as D
 import qualified DOM.Node.Document.Experimental as D
+import qualified DOM.Node.Element as D
 import qualified DOM.Node.Element.Experimental as D
 import qualified DOM.Node.Types as D
 import qualified DOM.RequestAnimationFrame as D
-import Graphics.WebGL.Context
-import Graphics.WebGL.Free
-import qualified Graphics.WebGL.Raw.Enums as GL
-import Graphics.WebGL.Raw.Types
-import Graphics.Canvas (Canvas(), CanvasElement(), getCanvasElementById, setCanvasDimensions)
+import Graphics.Canvas (Canvas(), getCanvasElementById)
 import Graphics.Canvas.Element
-import Math.Radians
 
--- | The matrix library is based on plain JavaScript arrays. Extract the backing array from the matrix and convert
--- | it to a typed array so we can use it with WebGL.
-matrixToFloat32Array :: Mat4 -> Float32Array
-matrixToFloat32Array = asFloat32Array <<< toArray
+-- | Get the global document as a Document type
+globalDocument :: forall eff. Eff (dom :: D.DOM | eff) D.Document
+globalDocument = D.window >>= D.document >>= pure <<< D.htmlDocumentToDocument
 
--- | Get the transformation matrix for the cube's vertices based on it's current angle
-mvMatrix :: Radians -> Float32Array
-mvMatrix (Radians angle) = matrixToFloat32Array $ rotate angle j3 $ translate (vec3 0.0 0.0 (-6.0)) identity
+-- | Returns true if we are in full screen and have pointer lock
+inFullscreen :: forall eff. Eff (dom :: D.DOM | eff) Boolean
+inFullscreen = do
+  document <- globalDocument
+  maybeFullscreenEl <- D.fullscreenElement document >>= pure <<< toMaybe
+  maybePointerLockEl <- D.pointerLockElement document >>= pure <<< toMaybe
+  -- TODO: Check that the full screen and pointer lock elements are our canvas
+  case Tuple maybeFullscreenEl maybePointerLockEl of
+    Tuple (Just _) (Just _) -> return true
+    Tuple _ _ -> return false
 
--- | Get a perspective matrix as a typed array for the given buffer dimensions
-perspectiveMatrix :: Int -> Int -> Float32Array
-perspectiveMatrix bufferWidth bufferHeight = matrixToFloat32Array $
-  makePerspective 45.0 (toNumber bufferWidth / toNumber bufferHeight) 0.1 100.0
+-- | Update the state of the key with the given key code if it is one we are tracking
+updateKey :: Int -> Boolean -> KeyboardState -> KeyboardState
+updateKey code isDown (KeyboardState ks) | code == D.wKeyCode = KeyboardState {w: isDown, a: ks.a, d: ks.d, s: ks.s}
+updateKey code isDown (KeyboardState ks) | code == D.aKeyCode = KeyboardState {w: ks.w, a: isDown, d: ks.d, s: ks.s}
+updateKey code isDown (KeyboardState ks) | code == D.dKeyCode = KeyboardState {w: ks.w, a: ks.a, d: isDown, s: ks.s}
+updateKey code isDown (KeyboardState ks) | code == D.sKeyCode = KeyboardState {w: ks.w, a: ks.a, d: ks.d, s: isDown}
+updateKey _ _ ks = ks
 
--- | Type to hold attributes associated with the canvas
-type CanvasContext = {
-  el :: CanvasElement,
-  gl :: WebGLContext,
-  programLocations :: ProgramLocations,
-  cubeBuffers :: CubeBuffers
-  }
+-- Type for passing application state between event listeners and the render loop
+newtype AppState = AppState {keyboard :: KeyboardState, simulation :: SimulationState}
+
+instance showAppState :: Show AppState where
+  show (AppState s) = "AppState {keyboard" ++ show s.keyboard ++ ", simulation: " ++ show s.simulation ++ "}"
+
+mapKeyboardState :: (KeyboardState -> KeyboardState) -> AppState -> AppState
+mapKeyboardState f (AppState s) = AppState {keyboard: f s.keyboard, simulation: s.simulation}
+
+mapSimulationState :: (SimulationState -> SimulationState) -> AppState -> AppState
+mapSimulationState f (AppState s) = AppState {keyboard: s.keyboard, simulation: f s.simulation}
+
+-- | Handle canvas mousemove events by updating the simulation state.
+canvasMousemove :: forall eff h. STRef h AppState -> D.MouseEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+canvasMousemove stateRef e = do
+  -- Moving the mouse "up" causes a negative movementY
+  modifySTRef stateRef $ mapSimulationState $ applyMouseMove $ MouseMove (D.movementX e) ((-1.0) * D.movementY e)
+  return unit
 
 -- | Handle canvas clicks. If we are not in full screen, open the canvas in full screen.
 -- | Otherwise, toggle the direction of the cube's rotation.
-canvasClick :: forall eff h. STRef h SimulationState -> D.Element -> D.MouseEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+canvasClick :: forall eff h. STRef h AppState -> D.Element -> D.MouseEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
 canvasClick stateRef el _ = do
-  maybeFullscreenEl <- D.window >>= D.document >>= pure <<< D.htmlDocumentToDocument >>= D.fullscreenElement >>= pure <<< toMaybe
-  case maybeFullscreenEl of
-    Nothing -> do  
+  fullScreen <- inFullscreen
+  if fullScreen
+    then do
+      modifySTRef stateRef $ mapSimulationState toggleDirection
+      return unit
+    else do
       D.requestFullscreen el
       D.requestPointerLock el
-    -- TODO: Check that the fullscreen element is our canvas
-    Just fullscreenEl -> do
-      modifySTRef stateRef toggleDirection
-      return unit
+
+-- | Monitor document keydown events so we can track which keys are depressed
+documentKeydown :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+documentKeydown stateRef e = do
+  modifySTRef stateRef $ mapKeyboardState $ updateKey (D.keyCode e) true
+  return unit
+
+-- | Monitor document keyup events so we can track which keys are depressed
+documentKeyup :: forall eff h. STRef h AppState -> D.KeyboardEvent -> Eff (dom :: D.DOM, st :: ST h | eff) Unit
+documentKeyup stateRef e = do
+  modifySTRef stateRef $ mapKeyboardState $ updateKey (D.keyCode e) false
+  return unit
+
+-- | Add keyboard and mouse move event listeners when we enter full screen, and remove them when we leave it
+documentFullscreenChange :: forall eff. D.KeyboardEventListener (dom :: D.DOM | eff) -> D.KeyboardEventListener (dom :: D.DOM | eff)
+  -> D.MouseEventListener (dom :: D.DOM | eff) -> D.EventTarget -> D.EventTarget -> D.Event -> Eff (dom :: D.DOM | eff) Unit
+documentFullscreenChange keyupListener keydownListener moveListener targetCanvas targetDocument _ = do
+  fullScreen <- inFullscreen
+  if fullScreen
+    then do
+      D.addKeyboardEventListener D.keyup keyupListener false targetDocument
+      D.addKeyboardEventListener D.keydown keydownListener false targetDocument
+      D.addMouseEventListener D.mousemove moveListener false targetCanvas
+    else do
+      D.removeKeyboardEventListener D.keyup keyupListener false targetDocument
+      D.removeKeyboardEventListener D.keydown keydownListener false targetDocument
+      D.removeMouseEventListener D.mousemove moveListener false targetCanvas
 
 -- | Main loop. Steps the simulation state forwards in time then renders the new state.
-tick :: forall eff h. CanvasContext -> STRef h SimulationState -> Milliseconds -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now, st :: ST h | eff) Unit
-tick c stateRef time = do
-  -- Update the canvas dimensions in case the element dimensions have changed
-  h <- D.clientHeight $ toElement c.el
-  w <- D.clientWidth $ toElement c.el
-  setCanvasDimensions {height: toNumber h, width: toNumber w} c.el
-
+tick :: forall eff h. RenderingContext -> STRef h AppState -> Milliseconds -> Eff (canvas :: Canvas, dom :: D.DOM, now :: Now, st :: ST h | eff) Unit
+tick ctx stateRef time = do
   newTime <- nowEpochMilliseconds
-  newSimulationState <- modifySTRef stateRef $ timestep (newTime - time)
-  runWebGL c.gl do
-    -- Update the WebGL viewport dimensions to match the available drawing buffer
-    bufferHeight <- getDrawingBufferHeight
-    bufferWidth <- getDrawingBufferWidth
-    viewport 0 0 bufferWidth bufferHeight
+  (AppState s) <- modifySTRef stateRef (\(AppState s) -> AppState {keyboard: s.keyboard, simulation: timestep (newTime - time) s.keyboard s.simulation})
+  render ctx s.simulation
+  D.requestAnimationFrame $ tick ctx stateRef newTime
 
-    -- Clear the canvas
-    clear $ GL.colorBufferBit .|. GL.depthBufferBit
-    uniformMatrix4fv c.programLocations.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
-    uniformMatrix4fv c.programLocations.mvMatrix false $ mvMatrix newSimulationState.angle
-
-    -- Draw the cube!
-    bindBuffer GL.arrayBuffer c.cubeBuffers.vertex
-    vertexAttribPointer c.programLocations.aVertex 3 GL.float false 0 0
-    bindBuffer GL.elementArrayBuffer c.cubeBuffers.index
-    drawElements GL.triangles 36 GL.unsignedShort 0
-  D.requestAnimationFrame $ tick c stateRef newTime
-
--- | Application entry function
+-- | Start the application: set up the canvas and start the render loop
 main :: Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION, now :: Now) Unit
 main = do
-  Just el <- getCanvasElementById "easel"
-  gl <- getWebGLContext el
-  Tuple program locations <- initialiseShaderProgram gl
-  cubeBuffers <- runWebGL gl do
-    clearColor 0.0 0.0 0.0 1.0
-    enable GL.depthTest
-    depthFunc GL.lequal
-    useProgram program
-    initialiseBuffers
+  Just canvas <- getCanvasElementById "easel"
+  el <- pure $ toElement canvas
+  renderingContext <- initialiseWebGL el canvas
   time <- nowEpochMilliseconds
-  elEventTarget <- pure $ D.elementToEventTarget $ toElement el
-  runST do
-    -- Aaa mutable state!
-    -- The event listener needs to update the state read by the render loop somehow, so use a mutable reference cell
-    stateRef <- newSTRef initialSimulationState
-    D.addMouseEventListener D.click (canvasClick stateRef $ toElement el) false elEventTarget
-    tick {el: el, gl: gl, programLocations: locations, cubeBuffers: cubeBuffers} stateRef time
+  elEventTarget <- pure $ D.elementToEventTarget el
+  documentEventTarget <- globalDocument >>= pure <<< D.documentToEventTarget
 
+  -- Aaa mutable state!
+  -- The event listeners need to update the state read by the render loop somehow, so let's use a mutable reference cell
+  runST do
+    stateRef <- newSTRef $ AppState {simulation: initialSimulationState, keyboard: KeyboardState {w: false, a: false, s: false, d: false}}
+
+    -- Event listeners added and removed when we enter and leave full screen
+    keyupListener <- pure $ D.keyboardEventListener (documentKeyup stateRef)
+    keydownListener <- pure $ D.keyboardEventListener (documentKeydown stateRef)
+    moveListener <- pure $ D.mouseEventListener (canvasMousemove stateRef)
+
+    -- Listener for pointer lock and full screen change events
+    fullscreenListener <- pure $ D.eventListener (documentFullscreenChange keyupListener keydownListener moveListener elEventTarget documentEventTarget)
+    D.addEventListener D.fullscreenChange fullscreenListener false documentEventTarget
+    D.addEventListener D.pointerLockChange fullscreenListener false documentEventTarget
+
+    D.addMouseEventListener D.click (D.mouseEventListener (canvasClick stateRef el)) false elEventTarget
+    tick renderingContext stateRef time

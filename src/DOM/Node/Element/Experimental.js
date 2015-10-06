@@ -12,19 +12,17 @@ exports.clientWidth = function(el) {
   };
 };
 
-var fullscreenFunction = Element.prototype.requestFullscreen || Element.prototype.webkitRequestFullScreen || Element.prototype.mozRequestFullScreen || Element.prototpe.msRequestFullScreen;
-
 exports.requestFullscreen = function(el) {
   return function() {
+    var fullscreenFunction = el.requestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullScreen;
     fullscreenFunction.call(el);
     return {};
   };
 };
 
-var pointerLockFunction = Element.prototype.requestPointerLock || Element.ptototype.webkitRequestPointerLock || Element.prototype.mozRequestPointerLock || Element.prototype.msRequestPointerLock;
-
 exports.requestPointerLock = function(el) {
   return function() {
+    var pointerLockFunction = el.requestPointerLock || el.webkitRequestPointerLock || el.mozRequestPointerLock || el.msRequestPointerLock;
     pointerLockFunction.call(el);
     return {};
   };
