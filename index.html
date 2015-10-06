@@ -5,15 +5,15 @@
 	<script id="fragment-shader" type="x-shader/x-fragment">
 		precision mediump float;
 
-		varying vec3 transformedNormal;
-		varying vec4 colour;
+		varying vec4 transformedNormal;
+		varying vec3 colour;
 
 		uniform vec3 ambientColour;
 		uniform vec3 directionalColour;
 		uniform vec3 lightingDirection;
 
 		void main(void) {
-			gl_FragColor = colour;
+			gl_FragColor = vec4(ambientColour * colour, 1.0) + 0.0 * dot(lightingDirection, directionalColour);
 		}
 	</script>
 	<script id="vertex-shader" type="x-shader/x-vertex">
@@ -21,16 +21,16 @@
 		attribute vec3 vertexColour;
 		attribute vec3 vertexNormal;
 
-		varying vec4 colour;
-		varying vec3 transformedNormal;
+		varying vec3 colour;
+		varying vec4 transformedNormal;
 
 		uniform mat4 mvMatrix;
 		uniform mat4 pMatrix;
 		uniform mat4 nMatrix;
 
 		void main(void) {
-			transformedNormal = vertexNormal;
-			colour = vec4(vertexColour, 1.0);
+			transformedNormal = nMatrix * vec4(vertexNormal, 0.0);
+			colour = vertexColour;
 			gl_Position = pMatrix * mvMatrix * vec4(vertexPosition, 1.0);
 		}
 	</script>

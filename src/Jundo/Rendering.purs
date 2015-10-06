@@ -113,7 +113,7 @@ render (RenderingContext ctx) simulationState = do
       uniformMatrix4fv ctx.shaderVariables.mvMatrix false $ cubeMVMatrix simulationState
 
       -- TODO: Calculate vertex normal transformation matrix
-      uniformMatrix4fv ctx.shaderVariables.nMatrix false $ cubeMVMatrix simulationState
+      uniformMatrix4fv ctx.shaderVariables.nMatrix false $ matrixToFloat32Array identity
 
       arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.position 3 false 0 0
       arrayBufferOperation ctx.cubeBuffers.colour $ vertexAttribPointer ctx.shaderVariables.colour 3 false 0 0
