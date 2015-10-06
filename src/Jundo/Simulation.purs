@@ -1,4 +1,4 @@
--- | Pure functions and types representing the (pretty simple) state of the simulation
+-- | Pure functions and types representing the state of the simulation
 module Jundo.Simulation (
   RotationDirection(..),
   SimulationState(..),
@@ -28,6 +28,8 @@ instance showRotationDirection :: Show RotationDirection where
   show Clockwise = "Clockwise"
   show Anticlockwise = "Anticlockwise"
 
+-- | State of the cube. Direction is clockwise or anticlockwise rotation about the positive y axis. Angle is the angle
+-- | of anticlockwise rotation about the positive y axis.
 newtype CubeState = CubeState {direction :: RotationDirection, angle :: Radians, position :: Vec3 Number}
 
 instance showCubeState :: Show CubeState where

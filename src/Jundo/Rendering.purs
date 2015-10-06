@@ -53,9 +53,11 @@ materialColour = asFloat32Array [0.58, 0.0, 0.83]
 matrixToFloat32Array :: Mat4 -> Float32Array
 matrixToFloat32Array = asFloat32Array <<< toArray
 
+-- | The cube model matrix combines the rotation due to its spinning and the translation for its fixed position
 cubeModelMatrix :: CubeState -> Mat4
 cubeModelMatrix (CubeState s) = mulM (makeTranslate s.position) (makeRotate s.angle j3)
 
+-- | The view matrix takes account of the camera's angle and position
 viewMatrix :: CameraState -> Mat4
 viewMatrix (CameraState s) = mulM rotationMatrix translationMatrix
   where

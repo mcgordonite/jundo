@@ -63,6 +63,7 @@ loadShaderSourceFromElement elementId = do
   Just el <- D.getElementById elementId document >>= pure <<< toMaybe
   D.textContent $ D.elementToNode el
 
+-- | Attempt to get the named uniform location, returning either the location or an error containing the name
 uniformByName :: WebGLProgram -> String -> WebGL (Either String WebGLUniformLocation)
 uniformByName program name = do
   maybeLocation <- getUniformLocation program name
@@ -70,6 +71,7 @@ uniformByName program name = do
     Nothing -> return $ Left ("Missing uniform location " ++ name)
     Just location -> return $ Right location
 
+-- | Attempt to get the named attribute location, returning either the location or an error containing the name
 attributeByName :: WebGLProgram -> String -> WebGL (Either String AttributeLocation)
 attributeByName program name = do
   maybeLocation <- getAttribLocation program name
