@@ -63,6 +63,20 @@ loadShaderSourceFromElement elementId = do
   Just el <- D.getElementById elementId document >>= pure <<< toMaybe
   D.textContent $ D.elementToNode el
 
+uniformByName :: WebGLProgram -> String -> WebGL (Either String WebGLUniformLocation)
+uniformByName program name = do
+  maybeLocation <- getUniformLocation program name
+  case maybeLocation of
+    Nothing -> return $ Left ("Missing uniform location " ++ name)
+    Just location -> return $ Right location
+
+attributeByName :: WebGLProgram -> String -> WebGL (Either String AttributeLocation)
+attributeByName program name = do
+  maybeLocation <- getAttribLocation program name
+  case maybeLocation of
+    Nothing -> return $ Left ("Missing attribute location " ++ name)
+    Just location -> return $ Right location
+
 -- | Load and compile the fragment and vertex shader code from script tags, throwing a JavaScript exception if this fails
 initialiseShaderProgram :: forall eff. WebGLContext -> Eff (canvas :: Canvas, dom :: D.DOM, err :: EXCEPTION | eff) (Tuple WebGLProgram ShaderVariables)
 initialiseShaderProgram gl = do
@@ -72,29 +86,29 @@ initialiseShaderProgram gl = do
   case eitherProgram of
     Left err -> throwException $ error err
     Right program -> do
-      maybeVariables <- runWebGL gl do
-        maybeMVMatrixLocation <- getUniformLocation program "mvMatrix"
-        maybePMatrixLocation <- getUniformLocation program "pMatrix"
-        maybeNMatrixLocation <- getUniformLocation program "nMatrix"
-        maybeAmbientColourLocation <- getUniformLocation program "ambientColour"
-        maybeDirectionalColourLocation <- getUniformLocation program "directionalColour"
-        maybeLightingDirectionLocation <- getUniformLocation program "lightingDirection"
-        maybePositionLocation <- getAttribLocation program "vertexPosition"
-        maybeColourLocation <- getAttribLocation program "vertexColour"
-        maybeNormalLocation <- getAttribLocation program "vertexNormal"
+      eitherVariables <- runWebGL gl do
+        eitherMVMatrixLocation <- uniformByName program "mvMatrix"
+        eitherPMatrixLocation <- uniformByName program "pMatrix"
+        eitherNMatrixLocation <- uniformByName program "nMatrix"
+        eitherAmbientColourLocation <- uniformByName program "ambientColour"
+        eitherDirectionalColourLocation <- uniformByName program "directionalColour"
+        eitherLightingDirectionLocation <- uniformByName program "lightingDirection"
+        eitherPositionLocation <- attributeByName program "vertexPosition"
+        eitherColourLocation <- attributeByName program "vertexColour"
+        eitherNormalLocation <- attributeByName program "vertexNormal"
         return $ shaderVariables
-          <$> maybeMVMatrixLocation
-          <*> maybePMatrixLocation
-          <*> maybeNMatrixLocation
-          <*> maybeAmbientColourLocation
-          <*> maybeDirectionalColourLocation
-          <*> maybeLightingDirectionLocation
-          <*> maybePositionLocation
-          <*> maybeColourLocation
-          <*> maybeNormalLocation
-      case maybeVariables of
-        Nothing -> throwException $ error "Missing shader program location"
-        Just variables -> do
+          <$> eitherMVMatrixLocation
+          <*> eitherPMatrixLocation
+          <*> eitherNMatrixLocation
+          <*> eitherAmbientColourLocation
+          <*> eitherDirectionalColourLocation
+          <*> eitherLightingDirectionLocation
+          <*> eitherPositionLocation
+          <*> eitherColourLocation
+          <*> eitherNormalLocation
+      case eitherVariables of
+        Left err -> throwException $ error err
+        Right variables -> do
           runWebGL gl $ programOperation program do
             enableVertexAttribArray variables.position
             enableVertexAttribArray variables.colour
