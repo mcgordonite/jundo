@@ -1,5 +1,5 @@
 -- | Logic for creating a cube in WebGL
-module Cube (
+module Jundo.Cube (
   CubeBuffers(..),
   initialiseBuffers
   ) where
@@ -9,10 +9,9 @@ import Data.ArrayBuffer.Types (Float32Array(), Uint16Array())
 import Data.Maybe
 import Data.TypedArray (asFloat32Array, asUint16Array)
 import Graphics.WebGL.Free
-import qualified Graphics.WebGL.Raw.Enums as GL
 import Graphics.WebGL.Raw.Types
 
-type CubeBuffers = {vertex :: WebGLBuffer, index :: WebGLBuffer}
+type CubeBuffers = {vertex :: WebGLBuffer, index :: WebGLBuffer, colour :: WebGLBuffer, normal :: WebGLBuffer}
 
 vertices :: Float32Array
 vertices = asFloat32Array [
@@ -48,6 +47,40 @@ vertices = asFloat32Array [
   -1.0, 1.0, -1.0
   ]
 
+vertexNormals :: Float32Array
+vertexNormals = asFloat32Array [
+  -- Front face
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  0.0, 0.0, 1.0,
+  -- Back face
+  0.0, 0.0, -1.0,
+  0.0, 0.0, -1.0,
+  0.0, 0.0, -1.0,
+  0.0, 0.0, -1.0,
+  -- Top face
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  0.0, 1.0, 0.0,
+  -- Bottom face
+  0.0, -1.0, 0.0,
+  0.0, -1.0, 0.0,
+  0.0, -1.0, 0.0,
+  0.0, -1.0, 0.0,
+  -- Right face
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  1.0, 0.0, 0.0,
+  -- Left face
+  -1.0, 0.0, 0.0,
+  -1.0, 0.0, 0.0,
+  -1.0, 0.0, 0.0,
+  -1.0, 0.0, 0.0
+  ]
+
 vertexIndices :: Uint16Array
 vertexIndices = asUint16Array [
   -- Front face
@@ -72,14 +105,15 @@ vertexIndices = asUint16Array [
 
 -- TODO: Create buffer will return Nothing if the context is lost
 -- | Create and populate the WebGL buffers required to render a plain old cube
-initialiseBuffers :: WebGL CubeBuffers
-initialiseBuffers = do
-  Just cubeVertexBuffer <- createBuffer
-  bindBuffer GL.arrayBuffer cubeVertexBuffer
-  bufferFloat32Data GL.arrayBuffer vertices GL.staticDraw
+initialiseBuffers :: WebGLProgram -> WebGL CubeBuffers
+initialiseBuffers program = do
+  Just vertexBuffer <- createBuffer
+  Just indexBuffer <- createBuffer
+  Just colourBuffer <- createBuffer
+  Just normalBuffer <- createBuffer
+  programOperation program do
+    arrayBufferOperation vertexBuffer $ bufferFloat32Data vertices staticDraw
+    arrayBufferOperation normalBuffer $ bufferFloat32Data vertexNormals staticDraw
+    elementArrayBufferOperation indexBuffer $ bufferUint16Data vertexIndices staticDraw
+  return {vertex: vertexBuffer, index: indexBuffer, colour: colourBuffer, normal: normalBuffer}
 
-  Just cubeIndexBuffer <- createBuffer
-  bindBuffer GL.elementArrayBuffer cubeIndexBuffer
-  bufferUint16Data GL.elementArrayBuffer vertexIndices GL.staticDraw
-
-  return {vertex: cubeVertexBuffer, index: cubeIndexBuffer}

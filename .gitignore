@@ -5,3 +5,4 @@ bower_components/
 output/
 src/.webpack.js
 *.tix
+.browserify-cache.json
