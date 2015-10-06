@@ -1,7 +1,10 @@
 -- | Functions relating to the MouseEvent type
 module DOM.Event.MouseEvent (
   MouseEventType(),
+  MouseEventListener(),
+  mouseEventListener,
   addMouseEventListener,
+  removeMouseEventListener,
   click,
   mousemove,
   movementX,
@@ -26,11 +29,19 @@ foreign import movementX :: MouseEvent -> Number
 -- | Get the movement in the y direction from a mouse event
 foreign import movementY :: MouseEvent -> Number
 
+-- | Type representing a DOM EventListener for MouseEvents
 foreign import data MouseEventListener :: # ! -> *
-foreign import mouseEventListener :: forall eff a. (MouseEvent -> Eff eff a) -> MouseEventListener eff
-foreign import addMouseEventListenerImpl :: forall eff. EventType -> MouseEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
 
--- | Add an event listener to the given element for the given mouse event type
-addMouseEventListener :: forall eff a. MouseEventType -> (MouseEvent -> Eff (dom :: DOM | eff) a) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
-addMouseEventListener (MouseEventType event) callback useCapture target =
-  addMouseEventListenerImpl event (mouseEventListener callback) useCapture target
+--  | Create a MouseEventListener from an action in the Eff monad
+foreign import mouseEventListener :: forall eff a. (MouseEvent -> Eff eff a) -> MouseEventListener eff
+
+foreign import addMouseEventListenerImpl :: forall eff. EventType -> MouseEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
+foreign import removeMouseEventListenerImpl :: forall eff. EventType -> MouseEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
+
+-- | Register a MouseEventListener for the given event type and target
+addMouseEventListener :: forall eff. MouseEventType -> MouseEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
+addMouseEventListener (MouseEventType eventType) = addMouseEventListenerImpl eventType
+
+-- | Remove a MouseEventListener
+removeMouseEventListener :: forall eff. MouseEventType -> MouseEventListener (dom :: DOM | eff) -> Boolean -> EventTarget -> Eff (dom :: DOM | eff) Unit
+removeMouseEventListener (MouseEventType eventType) = removeMouseEventListenerImpl eventType
