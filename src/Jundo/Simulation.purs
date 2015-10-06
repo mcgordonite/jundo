@@ -56,7 +56,7 @@ mapCubeState f (SimulationState s) = SimulationState {cube: f s.cube, camera: s.
 initialSimulationState :: SimulationState
 initialSimulationState = SimulationState {
   cube: CubeState {direction: Anticlockwise, angle: 0.0, position: vec3 0.0 1.5 (-6.0)},
-  camera: CameraState {pitch: 0.0, yaw: 0.0, position: vec3 0.0 0.0 0.0}
+  camera: CameraState {pitch: 0.25, yaw: 0.0, position: vec3 0.0 0.0 0.0}
   }
 
 -- | Type for tracking which keys are currently depressed
