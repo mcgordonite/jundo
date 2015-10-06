@@ -35,25 +35,25 @@ type ShaderVariables = {
   ambientColour :: WebGLUniformLocation,
   directionalColour :: WebGLUniformLocation,
   lightingDirection :: WebGLUniformLocation,
+  materialColour :: WebGLUniformLocation,
   mvMatrix :: WebGLUniformLocation,
   pMatrix :: WebGLUniformLocation,
   nMatrix :: WebGLUniformLocation,
   position :: AttributeLocation,
-  colour :: AttributeLocation,
   normal :: AttributeLocation
   }
 
 shaderVariables :: WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation -> WebGLUniformLocation
-  -> WebGLUniformLocation -> AttributeLocation -> AttributeLocation -> AttributeLocation -> ShaderVariables
-shaderVariables mvMatrix pMatrix nMatrix ambientColour directionalColour lightingDirection position colour normal = {
+  -> WebGLUniformLocation -> WebGLUniformLocation -> AttributeLocation -> AttributeLocation -> ShaderVariables
+shaderVariables mvMatrix pMatrix nMatrix materialColour ambientColour directionalColour lightingDirection position normal = {
   ambientColour: ambientColour,
   directionalColour: directionalColour,
   lightingDirection: lightingDirection,
+  materialColour: materialColour,
   mvMatrix: mvMatrix,
   pMatrix: pMatrix,
   nMatrix: nMatrix,
   position: position,
-  colour: colour,
   normal: normal
   }
 
@@ -90,27 +90,26 @@ initialiseShaderProgram gl = do
         eitherMVMatrixLocation <- uniformByName program "mvMatrix"
         eitherPMatrixLocation <- uniformByName program "pMatrix"
         eitherNMatrixLocation <- uniformByName program "nMatrix"
+        eitherMaterialColourLocation <- uniformByName program "materialColour"
         eitherAmbientColourLocation <- uniformByName program "ambientColour"
         eitherDirectionalColourLocation <- uniformByName program "directionalColour"
         eitherLightingDirectionLocation <- uniformByName program "lightingDirection"
         eitherPositionLocation <- attributeByName program "vertexPosition"
-        eitherColourLocation <- attributeByName program "vertexColour"
         eitherNormalLocation <- attributeByName program "vertexNormal"
         return $ shaderVariables
           <$> eitherMVMatrixLocation
           <*> eitherPMatrixLocation
           <*> eitherNMatrixLocation
+          <*> eitherMaterialColourLocation
           <*> eitherAmbientColourLocation
           <*> eitherDirectionalColourLocation
           <*> eitherLightingDirectionLocation
           <*> eitherPositionLocation
-          <*> eitherColourLocation
           <*> eitherNormalLocation
       case eitherVariables of
         Left err -> throwException $ error err
         Right variables -> do
           runWebGL gl $ programOperation program do
             enableVertexAttribArray variables.position
-            enableVertexAttribArray variables.colour
             enableVertexAttribArray variables.normal
           return $ Tuple program variables

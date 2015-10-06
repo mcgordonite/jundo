@@ -44,6 +44,10 @@ directionalColour = asFloat32Array [0.80, 0.80, 0.80]
 lightingDirection :: Float32Array
 lightingDirection = asFloat32Array [0.0, 0.0, -1.0]
 
+-- | Diffuse and directional colour for cube material
+materialColour :: Float32Array
+materialColour = asFloat32Array [0.58, 0.0, 0.83]
+
 -- | The matrix library is based on plain JavaScript arrays. Extract the backing array from the matrix and convert
 -- | it to a typed array so we can use it with WebGL.
 matrixToFloat32Array :: Mat4 -> Float32Array
@@ -111,6 +115,7 @@ render (RenderingContext ctx) (SimulationState {camera: cameraState, cube: cubeS
     -- Draw the cube!
     programOperation ctx.program do
       uniform3fv ctx.shaderVariables.ambientColour ambientColour
+      uniform3fv ctx.shaderVariables.materialColour materialColour
       uniform3fv ctx.shaderVariables.directionalColour directionalColour
       uniform3fv ctx.shaderVariables.lightingDirection lightingDirection
       uniformMatrix4fv ctx.shaderVariables.pMatrix false $ perspectiveMatrix bufferWidth bufferHeight
@@ -120,7 +125,6 @@ render (RenderingContext ctx) (SimulationState {camera: cameraState, cube: cubeS
       uniformMatrix4fv ctx.shaderVariables.nMatrix false $ matrixToFloat32Array (normalMatrix cubeMatrix)
 
       arrayBufferOperation ctx.cubeBuffers.vertex $ vertexAttribPointer ctx.shaderVariables.position 3 false 0 0
-      arrayBufferOperation ctx.cubeBuffers.colour $ vertexAttribPointer ctx.shaderVariables.colour 3 false 0 0
       arrayBufferOperation ctx.cubeBuffers.normal $ vertexAttribPointer ctx.shaderVariables.normal 3 false 0 0
       elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements triangles 36 0
   return unit

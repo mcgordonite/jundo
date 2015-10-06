@@ -47,42 +47,6 @@ vertices = asFloat32Array [
   -1.0, 1.0, -1.0
   ]
 
--- Diffuse and directional colours are the same
-vertexColours :: Float32Array
-vertexColours = asFloat32Array [
-  -- Front face
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  -- Back face
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  -- Top face
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  -- Bottom face
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  -- Right face
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  -- Left face
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83,
-  0.58, 0.0, 0.83
-  ]
-
 vertexNormals :: Float32Array
 vertexNormals = asFloat32Array [
   -- Front face
@@ -149,7 +113,6 @@ initialiseBuffers program = do
   Just normalBuffer <- createBuffer
   programOperation program do
     arrayBufferOperation vertexBuffer $ bufferFloat32Data vertices staticDraw
-    arrayBufferOperation colourBuffer $ bufferFloat32Data vertexColours staticDraw
     arrayBufferOperation normalBuffer $ bufferFloat32Data vertexNormals staticDraw
     elementArrayBufferOperation indexBuffer $ bufferUint16Data vertexIndices staticDraw
   return {vertex: vertexBuffer, index: indexBuffer, colour: colourBuffer, normal: normalBuffer}
