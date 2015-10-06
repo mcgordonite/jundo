@@ -73,7 +73,7 @@ applyRate v (Seconds t) = v * t
 
 -- | Camera movement rate
 movementRate :: MetersPerSecond
-movementRate = 0.1
+movementRate = 1.0
 
 -- | Convert the keyboard state into a unit vector in the direction of movement if the camera was pointing in the -z direction
 cameraUnitVelocity :: KeyboardState -> Vec3 Number
