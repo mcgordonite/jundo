@@ -53,7 +53,7 @@ mapCubeState f (SimulationState s) = SimulationState {cube: f s.cube, camera: s.
 
 initialSimulationState :: SimulationState
 initialSimulationState = SimulationState {
-  cube: CubeState {direction: Anticlockwise, angle: 0.0, position: vec3 0.0 0.0 (-6.0)},
+  cube: CubeState {direction: Anticlockwise, angle: 0.0, position: vec3 0.0 1.5 (-6.0)},
   camera: CameraState {pitch: 0.0, yaw: 0.0, position: vec3 0.0 0.0 0.0}
   }
 
@@ -65,7 +65,7 @@ instance showKeyboardState :: Show KeyboardState where
 
 -- | Rotation speed of the cube
 angularSpeed :: RadiansPerSecond
-angularSpeed = 1.0
+angularSpeed = 0.5
 
 -- | The rate equation!
 applyRate :: Number -> Seconds -> Number
