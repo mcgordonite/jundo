@@ -13,14 +13,12 @@ module Jundo.Simulation (
   ) where
 
 import Prelude
+import Jundo.Units
 import Jundo.Vectors
 import Data.Time (Milliseconds(..), Seconds(..), toSeconds)
 import Data.Vector
 import Data.Vector3
-import Math
-
-type RadiansPerSecond = Number
-type MetersPerSecond = Number
+import Math as Math
 
 data RotationDirection = Clockwise | Anticlockwise
 
@@ -30,14 +28,14 @@ instance showRotationDirection :: Show RotationDirection where
 
 -- | State of the cube. Direction is clockwise or anticlockwise rotation about the positive y axis. Angle is the angle
 -- | of anticlockwise rotation about the positive y axis.
-newtype CubeState = CubeState {direction :: RotationDirection, angle :: Radians, position :: Vec3 Number}
+newtype CubeState = CubeState {direction :: RotationDirection, angle :: Radians, position :: Vec3 Metres}
 
 instance showCubeState :: Show CubeState where
   show (CubeState s) = "CubeState {direction: " ++ show s.direction ++ ", angle: " ++ show s.angle ++ ", position: " ++ show s.position ++ "}"
 
 -- | State of the camera. Yaw is anticlockwise rotation in radians about the positive y axis, pitch is anticlockwise rotation in radians about the 
 -- | positive x axis after it has been transformed for the yaw. At zero pitch and zero yaw, the camera points in the negative z direction.
-newtype CameraState = CameraState {yaw :: Radians, pitch :: Radians, position :: Vec3 Number}
+newtype CameraState = CameraState {yaw :: Radians, pitch :: Radians, position :: Vec3 Metres}
 
 instance showCameraState :: Show CameraState where
   show (CameraState s) = " CameraState {yaw: " ++ show s.yaw ++ ", pitch: " ++ show s.pitch ++ ", position: " ++ show s.position ++ "}"
@@ -55,8 +53,8 @@ mapCubeState f (SimulationState s) = SimulationState {cube: f s.cube, camera: s.
 
 initialSimulationState :: SimulationState
 initialSimulationState = SimulationState {
-  cube: CubeState {direction: Anticlockwise, angle: 0.0, position: vec3 0.0 1.5 (-6.0)},
-  camera: CameraState {pitch: 0.25, yaw: 0.0, position: vec3 0.0 0.0 0.0}
+  cube: CubeState {direction: Anticlockwise, angle: zero, position: vec3 zero (Metres 1.5) (Metres (-6.0))},
+  camera: CameraState {pitch: Radians 0.25, yaw: zero, position: vec3 zero zero zero}
   }
 
 -- | Type for tracking which keys are currently depressed
@@ -67,15 +65,11 @@ instance showKeyboardState :: Show KeyboardState where
 
 -- | Rotation speed of the cube
 angularSpeed :: RadiansPerSecond
-angularSpeed = 0.5
-
--- | The rate equation!
-applyRate :: Number -> Seconds -> Number
-applyRate v (Seconds t) = v * t
+angularSpeed = RadiansPerSecond 0.5
 
 -- | Camera movement rate
-movementRate :: MetersPerSecond
-movementRate = 1.0
+movementRate :: MetresPerSecond
+movementRate = MetresPerSecond 1.0
 
 -- | Convert the keyboard state into a unit vector in the direction of movement if the camera was pointing in the -z direction
 cameraUnitVelocity :: KeyboardState -> Vec3 Number
@@ -83,10 +77,10 @@ cameraUnitVelocity (KeyboardState {w: true, a: false, d: false, s: false}) = vec
 cameraUnitVelocity (KeyboardState {w: false, a: false, d: false, s: true}) = k3
 cameraUnitVelocity (KeyboardState {w: false, a: true, d: false, s: false}) = vec3 (-1.0) 0.0 0.0
 cameraUnitVelocity (KeyboardState {w: false, a: false, d: true, s: false}) = i3
-cameraUnitVelocity (KeyboardState {w: true, a: true, d: false, s: false}) = vec3 (-sqrt1_2) 0.0 (-sqrt1_2)
-cameraUnitVelocity (KeyboardState {w: true, a: false, d: true, s: false}) = vec3 sqrt1_2 0.0 (-sqrt1_2)
-cameraUnitVelocity (KeyboardState {w: false, a: true, d: false, s: true}) = vec3 (-sqrt1_2) 0.0 sqrt1_2
-cameraUnitVelocity (KeyboardState {w: false, a: false, d: true, s: true}) = vec3 sqrt1_2 0.0 sqrt1_2
+cameraUnitVelocity (KeyboardState {w: true, a: true, d: false, s: false}) = vec3 (-Math.sqrt1_2) 0.0 (-Math.sqrt1_2)
+cameraUnitVelocity (KeyboardState {w: true, a: false, d: true, s: false}) = vec3 Math.sqrt1_2 0.0 (-Math.sqrt1_2)
+cameraUnitVelocity (KeyboardState {w: false, a: true, d: false, s: true}) = vec3 (-Math.sqrt1_2) 0.0 Math.sqrt1_2
+cameraUnitVelocity (KeyboardState {w: false, a: false, d: true, s: true}) = vec3 Math.sqrt1_2 0.0 Math.sqrt1_2
 cameraUnitVelocity (KeyboardState {w: true, a: true, d: true, s: false}) = vec3 0.0 0.0 (-1.0)
 cameraUnitVelocity (KeyboardState {w: false, a: true, d: true, s: true}) = k3
 cameraUnitVelocity (KeyboardState {w: true, a: true, d: false, s: true}) = vec3 (-1.0) 0.0 0.0
@@ -102,14 +96,17 @@ timestep step ks simulationState = mapCubeState updateCube $ mapCameraState upda
   updateCube :: CubeState -> CubeState
   updateCube (CubeState cs) = CubeState {direction: cs.direction, position: cs.position, angle: cs.angle + angleChange cs.direction}
     where
-    angleChange direction = directionMultiplier * applyRate angularSpeed stepSeconds
+    angleChange :: RotationDirection -> Radians
+    angleChange direction = scaleMeasure directionMultiplier $ mulMeasure angularSpeed stepSeconds
+    directionMultiplier :: Number
     directionMultiplier = case cs.direction of
       Anticlockwise -> 1.0
       Clockwise -> -1.0
   updateCamera :: CameraState -> CameraState
   updateCamera (CameraState cs) = CameraState {pitch: cs.pitch, yaw: cs.yaw, position: vAdd cs.position positionChange}
     where
-    positionChange = scale (applyRate movementRate stepSeconds) $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
+    positionChange :: Vec3 Metres
+    positionChange = vScaleMeasure (mulMeasure movementRate stepSeconds) $ rotateVec3 j3 cs.yaw (cameraUnitVelocity ks)
 
 -- | Make the cube spin the other way! Excitement.
 toggleDirection :: SimulationState -> SimulationState
@@ -127,22 +124,22 @@ instance showMouseMove :: Show MouseMove where
 
 -- | Radians of pitch change per unit mouse movement
 pitchSensitivity :: Radians
-pitchSensitivity = 0.01
+pitchSensitivity = Radians 0.01
 
 -- | Radians of yaw change per unit mouse movement
 yawSensitivity :: Radians
-yawSensitivity = 0.01
+yawSensitivity = Radians 0.01
 
 -- | Apply a change in mouse position to the simulation state
 applyMouseMove :: MouseMove -> SimulationState -> SimulationState
 applyMouseMove (MouseMove dx dy) = mapCameraState \(CameraState cs) -> CameraState {
-  pitch: ensurePitch $ cs.pitch + dy * pitchSensitivity,
-  yaw: cs.yaw - dx * yawSensitivity,
+  pitch: ensurePitch $ cs.pitch + scaleMeasure dy pitchSensitivity,
+  yaw: cs.yaw - scaleMeasure dx yawSensitivity,
   position: cs.position
   }
   where
   -- Pitch must be between -0.5 pi and 0.5 pi
   ensurePitch :: Radians -> Radians
-  ensurePitch p | p < -0.5 * pi = -0.5 * pi
-  ensurePitch p | p > 0.5 * pi = 0.5 * pi
+  ensurePitch (Radians p) | p < -0.5 * Math.pi = Radians (-0.5 * Math.pi)
+  ensurePitch (Radians p) | p > 0.5 * Math.pi = Radians (0.5 * Math.pi)
   ensurePitch p = p

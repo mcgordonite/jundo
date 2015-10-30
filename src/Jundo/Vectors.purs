@@ -5,7 +5,7 @@ import Prelude
 import Data.Vector3
 import Data.Vector4
 import Data.Matrix4
-import Math
+import Jundo.Units
 
 -- | Takes the X, Y and Z values from a Vec4 and returns them as a Vec3
 dropW :: forall a. Vec4 a -> Vec3 a
@@ -17,4 +17,4 @@ withW v3 = vec4 (get3X v3) (get3Y v3) (get3Z v3)
 
 -- | Rotate the vector the given number of radians around the given axis
 rotateVec3 :: Vec3N -> Radians -> Vec3N -> Vec3N
-rotateVec3 axis angle input = dropW $ mulMatVect (makeRotate angle axis) (withW input 0.0)
+rotateVec3 axis (Radians angle) input = dropW $ mulMatVect (makeRotate angle axis) (withW input 0.0)

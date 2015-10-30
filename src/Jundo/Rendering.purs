@@ -10,10 +10,11 @@ import Jundo.Cube
 import Jundo.Shaders
 import Jundo.Simulation
 import Jundo.Vectors
+import Jundo.Units
 import Control.Monad.Eff
 import Control.Monad.Eff.Exception
 import Data.ArrayBuffer.Types (Float32Array())
-import Data.Int (toNumber)
+import qualified Data.Int as I
 import Data.Int.Bits ((.|.))
 import Data.Matrix (toArray, transpose)
 import Data.Maybe
@@ -30,7 +31,6 @@ import Graphics.WebGL.Context
 import Graphics.WebGL.Free
 import Graphics.WebGL.Raw.Types
 import Graphics.Canvas (Canvas(), CanvasElement(), setCanvasDimensions)
-import Math
 
 -- | Hard coded RGB colour of the ambient lighting
 ambientColour :: Float32Array
@@ -55,18 +55,20 @@ matrixToFloat32Array = asFloat32Array <<< toArray
 
 -- | The cube model matrix combines the rotation due to its spinning and the translation for its fixed position
 cubeModelMatrix :: CubeState -> Mat4
-cubeModelMatrix (CubeState s) = mulM (makeTranslate s.position) (makeRotate s.angle j3)
+cubeModelMatrix (CubeState s) = mulM (makeTranslate (map toNumber s.position)) (makeRotate (toNumber s.angle) j3)
 
 -- | The view matrix takes account of the camera's angle and position
 viewMatrix :: CameraState -> Mat4
 viewMatrix (CameraState s) = mulM rotationMatrix translationMatrix
   where
-  rotationMatrix = mulM (makeRotate (-1.0 * s.pitch) i3) (makeRotate (-1.0 * s.yaw) j3)
-  translationMatrix = makeTranslate $ V.scale (-1.0) s.position
+  rotationMatrix :: Mat4
+  rotationMatrix = mulM (makeRotate (-1.0 * toNumber s.pitch) i3) (makeRotate (-1.0 * toNumber s.yaw) j3)
+  translationMatrix :: Mat4
+  translationMatrix = makeTranslate $ map (((*) (-1.0)) <<< toNumber) s.position
 
 -- | Get a perspective matrix as a typed array for the given buffer dimensions
 perspectiveMatrix :: Int -> Int -> Float32Array
-perspectiveMatrix width height = matrixToFloat32Array $ makePerspective 45.0 (toNumber width / toNumber height) 0.1 100.0
+perspectiveMatrix width height = matrixToFloat32Array $ makePerspective 45.0 (I.toNumber width / I.toNumber height) 0.1 100.0
 
 -- | The normal transformation matrix is the transpose of the inverse of the model matrix
 normalMatrix :: Mat4 -> Mat4
@@ -103,7 +105,7 @@ render (RenderingContext ctx) (SimulationState {camera: cameraState, cube: cubeS
   -- Update the canvas dimensions in case the element dimensions have changed
   height <- D.clientHeight $ ctx.el
   width <- D.clientWidth $ ctx.el
-  setCanvasDimensions {height: toNumber height, width: toNumber width} ctx.canvas
+  setCanvasDimensions {height: I.toNumber height, width: I.toNumber width} ctx.canvas
 
   runWebGL ctx.gl do
     -- Update the WebGL viewport dimensions to match the available drawing buffer
@@ -130,3 +132,4 @@ render (RenderingContext ctx) (SimulationState {camera: cameraState, cube: cubeS
       arrayBufferOperation ctx.cubeBuffers.normal $ vertexAttribPointer ctx.shaderVariables.normal 3 false 0 0
       elementArrayBufferOperation ctx.cubeBuffers.index $ drawElements triangles 36 0
   return unit
+
