@@ -5,14 +5,9 @@ import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Console
 import Data.Either
 import Data.Array
-import Data.Tuple
-import Data.Vector
-import Data.Vector2
-import Data.Vector3
 import Jundo.WavefrontObj
 import Test.Assert
 
--- No vertex data has been defined so this should fail to parse
 noVertexMesh :: String
 noVertexMesh = "f 1/1/1 1/1/1 1/1/1"
 
@@ -82,40 +77,52 @@ assertLeft = assert <<< isLeft
 main :: Eff (assert :: ASSERT, console :: CONSOLE) Unit
 main = do
   log "Parse mesh with no vertex data"
+  -- No vertex data has been defined so this should fail to parse
   assertLeft $ parseObj noVertexMesh
 
   log "\nParse triangle mesh"
   parsedTriangleMesh <- pure (parseObj triangleMesh)
-  log "Right"
+  log "Is Right"
   assertRight parsedTriangleMesh
   case parsedTriangleMesh of
     Right (Mesh mesh) -> do
-      log "Elements length 3"
-      assert (length mesh.elements == 3)
-      log "Elements equal [0, 1, 2]"
+      log "Elements array equals [0, 1, 2]"
       assert (mesh.elements == [0, 1, 2])
 
-      log "Vertices length 9"
-      assert (length mesh.vertices == 9)
-      log "Vertices equal [0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]"
+      log "Vertices array equals [0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]"
       assert (mesh.vertices == [0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0])
 
-      log "Normals length 3"
-      assert (length mesh.normals == 9)
-      log "Normals equal [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]"
+      log "Normals array equals [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]"
+      assert (mesh.normals == [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0])
 
-      log "UVS length 6"
-      assert (length mesh.uvs == 6)
-      log "UVS equal [0.0 0.0, 0.0 0.0, 1.0, 0.0]"
+      log "UVS array equals [0.0 0.0, 0.0 0.0, 1.0, 0.0]"
       assert (mesh.uvs == [0.0, 0.0, 0.0, 0.0, 1.0, 0.0])
     _ -> assert false
 
   log "\nParse cube mesh"
   parsedCubeMesh <- pure (parseObj cubeMesh)
-  log "Right"
+  log "Is Right"
   assertRight parsedCubeMesh
   case parsedCubeMesh of
     Right (Mesh mesh) -> do
-      log "Elements length 36"
+      log "Elements array has length 36"
       assert (length mesh.elements == 36)
+      log "Elements array begins with [0, 1, 2, 2, 3, 0]"
+      -- The first two faces contain two duplicate vertices
+      assert (take 6 mesh.elements == [0, 1, 2, 2, 3, 0])
+
+      log "Vertices array has length 72"
+      assert (length mesh.vertices == 72)
+      log "Vertices array begins with [1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0]"
+      assert (take 12 mesh.vertices == [1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0])
+
+      log "Normals array has length 72"
+      assert (length mesh.normals == 72)
+      log "Normals array begins with [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]"
+      assert (take 12 mesh.normals == [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0])
+
+      log "UVs array has length 48"
+      assert (length mesh.uvs == 48)
+      log "UVs array begins with [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0]"
+      assert (take 8 mesh.uvs == [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0])
     _ -> assert false
