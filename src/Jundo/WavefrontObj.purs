@@ -1,4 +1,10 @@
-module Jundo.WavefrontObj where
+-- | Module for parsing a subset of Wavefront obj files. Only face, vertex, normal and texture data is read. All
+-- | other lines are ignored. Groups and materials are not supported. Faces must all be triangles, and every vertex
+-- | must have normal, texture and spatial coordinates.
+module Jundo.WavefrontObj (
+  Mesh(..),
+  parseObj
+  ) where
 
 import Prelude
 import Global (isFinite, isNaN, readFloat)
@@ -25,6 +31,9 @@ instance showMesh :: Show Mesh where
 instance eqMesh :: Eq Mesh where
   eq (Mesh a) (Mesh b) = a.elements == b.elements && a.vertices == b.vertices && a.normals == b.normals && a.uvs == b.uvs
 
+emptyMesh :: Mesh
+emptyMesh = Mesh {elements: [], vertices: [], normals: [], uvs: []}
+
 -- Type to track the state while parsing an OBJ file. The elements Map tracks normal, vertex and texture
 -- coordinate combinations to a position in the Mesh elements array.
 type ParseState = Tuple Mesh {
@@ -33,9 +42,6 @@ type ParseState = Tuple Mesh {
   normals :: Array (Vec3 Number),
   uvs :: Array (Vec2 Number)
   }
-
-emptyMesh :: Mesh
-emptyMesh = Mesh {elements: [], vertices: [], normals: [], uvs: []}
 
 initialState :: ParseState
 initialState = Tuple emptyMesh {elements: empty :: Map String Int, vertices: [], normals: [], uvs: []}
@@ -46,16 +52,16 @@ validateJust message input = case input of
   Just x -> Right x
   _ -> Left message
 
+-- Get the value at the given index from an array of Maybe a, binding with id to un-nest the Maybes
+maybeIndex :: forall a. Array (Maybe a) -> Int -> Maybe a
+maybeIndex array i = index array i >>= id
+
 -- Match the regex against the input string, returning an array of the given number of matched capturing
 -- groups or nothing if any of the groups was absent
 applyRegexForArray :: Regex -> Int -> String -> Maybe (Array String)
 applyRegexForArray regex n input = do
   maybesArray <- match regex input
   foldM (\a i -> maybeIndex maybesArray i >>= pure <<< snoc a) [] (1 .. n)
-
--- Get the value at the given index from an array of Maybe a, binding with id to un-nest the Maybes
-maybeIndex :: forall a. Array (Maybe a) -> Int -> Maybe a
-maybeIndex array i = index array i >>= id
 
 -- Read a finite non-NaN float from the given string
 parseFloat :: String -> Maybe Number
@@ -92,6 +98,7 @@ parseVector input = do
     regexSource :: String
     regexSource = "^\\s*" ++ joinWith "\\s+" (replicate size "(-?\\d+(?:\\.\\d+)?)") ++ "\\s*$"
 
+-- Parse data from a line beginning with "v", populating the vertices array
 parseVertexData :: String -> ParseState -> Either String ParseState
 parseVertexData input (Tuple mesh state) = do
   vector <- validateJust ("Failed to parse vertex vector from \"" ++ input ++ "\"") (parseVector input)
@@ -102,6 +109,7 @@ parseVertexData input (Tuple mesh state) = do
     uvs: state.uvs
     }
 
+-- Parse data from a line beginning with "vn", populating the normals array
 parseNormalData :: String -> ParseState -> Either String ParseState
 parseNormalData input (Tuple mesh state) = do
   vector <- validateJust ("Failed to parse normal vector from \"" ++ input ++ "\"") (parseVector input)
@@ -112,6 +120,7 @@ parseNormalData input (Tuple mesh state) = do
     uvs: state.uvs
     }
 
+-- Parse data from a line beginning with "vt", populating the uvs array
 parseUVData :: String -> ParseState -> Either String ParseState
 parseUVData input (Tuple mesh state) = do
   vector <- validateJust ("Failed to parse uv coordinates from \"" ++ input ++ "\"") (parseVector input)
@@ -127,6 +136,8 @@ parseUVData input (Tuple mesh state) = do
 faceRegex :: Regex
 faceRegex = regex "^\\s*(\\d+)/(\\d+)/(\\d+)\\s+(\\d+)/(\\d+)/(\\d+)\\s+(\\d+)/(\\d+)/(\\d+)\\s*$" noFlags
 
+-- Parse data from a line beginning with "f". Obj face lines contain three triplets of 1-based indices. The first
+-- index references the vertex coordinate, the second the texture coordinate and the third the normal vector.
 parseFaceData :: String -> ParseState -> Either String ParseState
 parseFaceData input (Tuple mesh state) = do
   validateJust ("Failed to parse face data from \"" ++ input ++ "\"") do
@@ -136,20 +147,20 @@ parseFaceData input (Tuple mesh state) = do
     indices <- parseStringArray fromString indexStrings
 
     -- Each face contains indices for three vertices
-    foldM (parseFace indices) (Tuple mesh state) (0 .. 2)
-
+    foldM (parseTriplet indices) (Tuple mesh state) (0 .. 2)
   where
     elementsKey :: Vec3 Number -> Vec3 Number -> Vec2 Number -> String
     elementsKey vertex normal uv = show (get3X vertex) ++ " " ++ show (get3Y vertex) ++ " " ++ show (get3Z vertex)
       ++ " " ++ show (get3X normal) ++ " " ++ show (get3Y normal) ++ " " ++ show (get3Z normal)
       ++ " " ++ show (get2X uv) ++ " " ++ show (get2Y uv)
-    parseFace :: Array Int -> ParseState -> Int -> Maybe ParseState
-    parseFace indices (Tuple (Mesh mesh) state) n = do
+    parseTriplet :: Array Int -> ParseState -> Int -> Maybe ParseState
+    parseTriplet indices (Tuple (Mesh mesh) state) n = do
       -- OBJ face indices are 1 based
       vertex <- index indices (3 * n) >>= (\i -> index state.vertices (i - 1))
       uv <- index indices (1 + 3 * n) >>= (\i -> index state.uvs (i - 1))
       normal <- index indices (2 + 3 * n) >>= (\i -> index state.normals (i - 1))
       key <- pure (elementsKey vertex normal uv)
+      -- Have we seen this triplet before?
       case lookup key state.elements of
         Just elementIndex -> do
           newMesh <- pure $ Mesh {
@@ -160,7 +171,8 @@ parseFaceData input (Tuple mesh state) = do
             }
           return $ Tuple newMesh state
         Nothing -> do
-          -- All mesh arrays should have the same length, choose the vertices array here to get the element array index
+          -- The mesh vertices, normals and UVs arrays should contain the same number of points (although the UVs are in
+          -- 2D); choose vertices array here to get the new element index
           elementIndex <- pure (length mesh.vertices / 3)
           newMesh <- pure $ Mesh {
             elements: snoc mesh.elements elementIndex,
@@ -176,6 +188,7 @@ parseFaceData input (Tuple mesh state) = do
             }
           return $ Tuple newMesh newState
 
+-- Parse a single line from an obj file
 parseLine :: ParseState -> String -> Either String ParseState
 parseLine parseState line = case parseDataLine line of
   Nothing -> Right parseState
@@ -187,9 +200,8 @@ parseLine parseState line = case parseDataLine line of
     _ -> parseFaceData lineData parseState
 
 -- Regex to match all new line character sequences
--- TODO: Include the \x85, \u2028 and \u2029 characters
 newLine :: Regex
-newLine = regex "\r\n|[\n\v\f\r]" noFlags
+newLine = regex "\r\n|[\n\\v\f\r\x85\\u2028\\u2029]" noFlags
 
 -- | Parse an obj file into a Mesh or an error String if the file is not valid
 parseObj :: String -> Either String Mesh
