@@ -15,6 +15,7 @@ module Jundo.Simulation (
 import Prelude
 import Jundo.Units
 import Jundo.Vectors
+import Data.Generic
 import Data.Time (Milliseconds(..), Seconds(..), toSeconds)
 import Data.Vector
 import Data.Vector3
@@ -22,9 +23,10 @@ import Math as Math
 
 data RotationDirection = Clockwise | Anticlockwise
 
+derive instance genericRotationDirection :: Generic RotationDirection
+
 instance showRotationDirection :: Show RotationDirection where
-  show Clockwise = "Clockwise"
-  show Anticlockwise = "Anticlockwise"
+  show = gShow
 
 -- | State of the cube. Direction is clockwise or anticlockwise rotation about the positive y axis. Angle is the angle
 -- | of anticlockwise rotation about the positive y axis.

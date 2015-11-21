@@ -11,6 +11,7 @@ import Global (isFinite, isNaN, readFloat)
 import Data.Array ((..), index, foldM, length, replicate, snoc)
 import Data.Either
 import Type.Proxy
+import Data.Generic
 import Data.Int (fromString)
 import Data.Map (Map(), empty, insert, lookup)
 import Data.Maybe
@@ -25,11 +26,13 @@ import Data.TypeNat
 -- | Representation of a parsed Wavefront obj file. The components can be passed to the WebGL bufferData method.
 data Mesh = Mesh {elements :: Array Int, vertices :: Array Number, normals :: Array Number, uvs :: Array Number}
 
+derive instance genericMesh :: Generic Mesh
+
 instance showMesh :: Show Mesh where
-  show (Mesh mesh) = "Mesh {elements: " ++ show mesh.elements ++ ", vertices: " ++ show mesh.vertices ++ ", normals: " ++ show mesh.normals ++ ", uvs: " ++ show mesh.uvs ++ "}"
+  show = gShow
 
 instance eqMesh :: Eq Mesh where
-  eq (Mesh a) (Mesh b) = a.elements == b.elements && a.vertices == b.vertices && a.normals == b.normals && a.uvs == b.uvs
+  eq = gEq
 
 emptyMesh :: Mesh
 emptyMesh = Mesh {elements: [], vertices: [], normals: [], uvs: []}

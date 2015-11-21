@@ -3,6 +3,7 @@
 module Jundo.Units where
 
 import Prelude
+import Data.Generic
 import Data.Time
 import Data.Vector
 
@@ -38,10 +39,6 @@ divMeasure = mapMeasure (/)
 scaleMeasure :: forall a. (Measure a) => Number -> a -> a
 scaleMeasure x u = fromNumber $ x * (toNumber u)
 
--- | Compare two values in a unit by thier numeric value.
-measureEq :: forall u. (Measure u) => u -> u -> Boolean
-measureEq a b = (toNumber a) == (toNumber b)
-
 -- | Utility function for printing values in a unit.
 measureShow :: forall u. (Measure u) => String -> u -> String
 measureShow name x = "(" ++ (show (toNumber x)) ++ " " ++ name ++ ")"
@@ -58,6 +55,8 @@ instance measureSeconds :: Measure Seconds where
 
 -- | Type representing a number of radians.
 newtype Radians = Radians Number
+
+derive instance genericRadians :: Generic Radians
 
 instance measureRadians :: Measure Radians where
   toNumber (Radians x) = x
@@ -80,7 +79,10 @@ instance divisionRingRadians :: DivisionRing Radians
 instance numRadians :: Num Radians
 
 instance eqRadians :: Eq Radians where
-  eq = measureEq
+  eq = gEq
+
+instance ordRadians :: Ord Radians where
+  compare = gCompare
 
 instance showRadians :: Show Radians where
   show = measureShow "radians"
@@ -88,6 +90,8 @@ instance showRadians :: Show Radians where
 
 -- | Type representing a number of metres.
 newtype Metres = Metres Number
+
+derive instance genericMetres :: Generic Metres
 
 instance measureMetres :: Measure Metres where
   toNumber (Metres x) = x
@@ -110,7 +114,10 @@ instance divisionRingMetres :: DivisionRing Metres
 instance numMetres :: Num Metres
 
 instance eqMetres :: Eq Metres where
-  eq = measureEq
+  eq = gEq
+
+instance ordMetres :: Ord Metres where
+  compare = gCompare
 
 instance showMetres :: Show Metres where
   show = measureShow "m"
@@ -118,6 +125,8 @@ instance showMetres :: Show Metres where
 
 -- | Type representing a number of metres per second.
 newtype MetresPerSecond = MetresPerSecond Number
+
+derive instance genericMetresPerSecond :: Generic MetresPerSecond
 
 instance measureMetresPerSecond :: Measure MetresPerSecond where
   toNumber (MetresPerSecond x) = x
@@ -140,7 +149,10 @@ instance divisionRingMetresPerSecond :: DivisionRing MetresPerSecond
 instance numMetresPerSecond :: Num MetresPerSecond
 
 instance eqMetresPerSecond :: Eq MetresPerSecond where
-  eq = measureEq
+  eq = gEq
+
+instance ordMetresPerSecond :: Ord MetresPerSecond where
+  compare = gCompare
 
 instance showMetresPerSecond :: Show MetresPerSecond where
   show = measureShow "m/s"
@@ -151,6 +163,8 @@ instance mulMeasureSMS :: MulMeasure Seconds MetresPerSecond Metres
 
 -- | Type representing a number of radians per second.
 newtype RadiansPerSecond = RadiansPerSecond Number
+
+derive instance genericRadiansPerSecond :: Generic RadiansPerSecond
 
 instance measureRadiansPerSecond :: Measure RadiansPerSecond where
   toNumber (RadiansPerSecond x) = x
@@ -173,7 +187,10 @@ instance divisionRingRadiansPerSecond :: DivisionRing RadiansPerSecond
 instance numRadiansPerSecond :: Num RadiansPerSecond
 
 instance eqRadiansPerSecond :: Eq RadiansPerSecond where
-  eq = measureEq
+  eq = gEq
+
+instance ordRadiansPerSecond :: Ord RadiansPerSecond where
+  compare = gCompare
 
 instance showRadiansPerSecond :: Show RadiansPerSecond where
   show = measureShow "radians/s"
