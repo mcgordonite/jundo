@@ -10,7 +10,7 @@ import Prelude
 import Global (isFinite, isNaN, readFloat)
 import Data.Array ((..), index, foldM, length, replicate, snoc)
 import Data.Either
-import Data.Generic (Proxy(), anyProxy)
+import Type.Proxy
 import Data.Int (fromString)
 import Data.Map (Map(), empty, insert, lookup)
 import Data.Maybe
@@ -94,7 +94,7 @@ parseVector input = do
   return $ fromArray components
   where
     size :: Int
-    size = sized (anyProxy :: Proxy s)
+    size = sized (Proxy :: Proxy s)
     regexSource :: String
     regexSource = "^\\s*" ++ joinWith "\\s+" (replicate size "(-?\\d+(?:\\.\\d+)?)") ++ "\\s*$"
 
